@@ -1,0 +1,42 @@
+en:
+  course:
+    forum:
+      forums:
+        sidebar_title: :'course.forum.forums.index.header'
+        new_forum:
+          header: 'New Forum'
+        edit_forum:
+          header: 'Edit Forum'
+        index:
+          header: 'Forums'
+          forum: 'Forum'
+          topics: 'Topics'
+          posts: 'Posts'
+          views: 'Views'
+          no_forum: 'No Forum'
+        show:
+          topics: 'Topics'
+          votes: 'Votes'
+          posts: 'Posts'
+          views: 'Views'
+          latest_post: 'Latest Post'
+          no_topic: 'No Topic'
+        new:
+          header: 'New Forum'
+        create:
+          success: 'Forum %{name} was created.'
+        edit:
+          header: 'Edit Forum'
+        update:
+          success: 'Forum %{name} was updated.'
+        destroy:
+          success: 'Forum %{name} was deleted.'
+          failure: 'Failed to delete forum: %{error}'
+        subscribe:
+          tag: 'Subscribe'
+          success: 'You have subscribed to Forum %{name}.'
+          failure: 'Fail to subscribe to Forum: %{error}'
+        unsubscribe:
+          tag: 'Unsubscribe'
+          success: 'You have been unsubscribed from the Forum %{name}.'
+          failure: 'Fail to unsubscribe from Forum: %{error}'

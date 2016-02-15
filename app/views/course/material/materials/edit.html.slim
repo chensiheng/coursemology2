@@ -1,0 +1,10 @@
+- add_breadcrumb format_inline_text(@material.name)
+= page_header
+
+= simple_form_for [current_course, @folder, @material] do |f|
+  = f.error_notification
+  = f.input :name
+  = f.input :description
+  = f.attachment
+
+  = f.button :submit

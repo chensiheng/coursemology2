@@ -1,21 +1,53 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe ApplicationThemingHelper, type: :helper do
   describe '#application_resources' do
     subject { helper.application_resources }
 
-    it { should be_html_safe }
-
-    it 'has application.js' do
-      expect(subject).to have_tag('script', with: {
-        src: '/assets/application.js'
-      })
-    end
+    it { is_expected.to be_html_safe }
 
     it 'has jquery' do
       expect(subject).to have_tag('script', with: {
-        src: '/assets/jquery.js'
+        :'src^' => '/assets/jquery-'
       })
+    end
+  end
+
+  describe '#page_class' do
+    subject { helper.page_class }
+
+    context 'when it has never been called before' do
+      it 'returns the page class' do
+        expect(subject).not_to be_blank
+      end
+    end
+
+    context 'when it has been called before' do
+      before { helper.page_class }
+      it { is_expected.to be_blank }
+    end
+
+    describe 'nested layouts' do
+      let(:views_directory) do
+        path = Pathname.new("#{__dir__}/../fixtures/helpers/application_theming_helper")
+        path.realpath
+      end
+
+      before { controller.prepend_view_path(views_directory) }
+      subject { render template: 'page_class_nested_inside', layout: 'layouts/page_class' }
+
+      it 'does not label the root container with the page class' do
+        expect(subject).not_to have_tag('div.action-view-test-case-test#root')
+      end
+
+      it 'does not label the nested layout container with the page class' do
+        expect(subject).not_to have_tag('div.action-view-test-case-test#nested')
+      end
+
+      it 'labels the deepest-nested container with the page class' do
+        expect(subject).to have_tag('div.action-view-test-case-test#nested-inside')
+      end
     end
   end
 end

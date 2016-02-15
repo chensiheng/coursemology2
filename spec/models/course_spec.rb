@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe Course, type: :model do
@@ -8,11 +9,18 @@ RSpec.describe Course, type: :model do
     it { is_expected.to belong_to(:instance).inverse_of(:courses) }
     it { is_expected.to have_many(:course_users).inverse_of(:course).dependent(:destroy) }
     it { is_expected.to have_many(:users).through(:course_users) }
+    it { is_expected.to have_many(:invitations).through(:course_users) }
     it { is_expected.to have_many(:announcements).dependent(:destroy) }
+    it { is_expected.to have_many(:achievements).dependent(:destroy) }
     it { is_expected.to have_many(:levels).dependent(:destroy) }
     it { is_expected.to have_many(:groups).dependent(:destroy) }
+    it { is_expected.to have_many(:assessment_categories).dependent(:destroy) }
+    it { is_expected.to have_many(:assessment_programming_evaluations).dependent(:destroy) }
+    it { is_expected.to have_many(:assessments).through(:assessment_categories) }
+    it { is_expected.to have_many(:forums).dependent(:destroy) }
     it { is_expected.to have_many(:lesson_plan_items).dependent(:destroy) }
     it { is_expected.to have_many(:lesson_plan_milestones).dependent(:destroy) }
+    it { is_expected.to have_many(:material_folders).dependent(:destroy) }
 
     it { is_expected.to validate_presence_of(:title) }
 
@@ -42,61 +50,33 @@ RSpec.describe Course, type: :model do
     describe 'levels' do
       let!(:user) { create(:administrator) }
       let!(:course) { create(:course) }
-      let!(:levels) do
-        create_list(:course_level, 5, course: course).map(&:experience_points_threshold)
-      end
+      let!(:levels) { create_list(:course_level, 5, course: course) }
+      before { course.reload }
 
       describe '.levels' do
         it 'returns levels is ascending order' do
-          course_level_numbers = course.levels.map(&:experience_points_threshold)
-          expect(course_level_numbers).to eq levels
+          level_thresholds = course.levels.map(&:experience_points_threshold)
+          expect(level_thresholds).to eq(level_thresholds.sort)
         end
       end
 
-      describe '#compute_level' do
-        it 'returns nil when experience_points is 0' do
-          level = course.compute_level(0)
-          expect(level).to be_nil
-        end
-      end
-
-      describe '#compute_level_number' do
-        context 'when experience_points is 0' do
-          it 'returns 0' do
-            level = course.compute_level_number(0)
-            expect(level).to eq 0
+      describe '#level_for' do
+        context 'when experience_points is 0 or negative' do
+          it 'returns the first level' do
+            [0, -1].each do |experience_points|
+              expect(course.level_for(experience_points)).to be_default_level
+            end
           end
         end
 
-        context 'when experience_points is between threshold' do
+        context 'when experience_points is a positive number' do
           it 'returns the correct level number' do
-            experience_points = levels.max - 1
-            level = course.compute_level_number(experience_points)
-            expect(level).to eq levels.size - 1
+            course.levels.each do |level|
+              experience_points = level.experience_points_threshold
+              expect(course.level_for(experience_points)).to eq(level)
+              expect(course.level_for(experience_points + 1)).to eq(level)
+            end
           end
-        end
-
-        context 'when experience_points coincides with a level threshold' do
-          it 'returns the correct level number' do
-            experience_points = levels[1]
-            level = course.compute_level_number(experience_points)
-            expect(level).to eq 2
-          end
-        end
-
-        context 'when experience_points exceeds all level thresholds' do
-          it 'returns the correct level number' do
-            experience_points = levels.max + 1
-            level = course.compute_level_number(experience_points)
-            expect(level).to eq levels.size
-          end
-        end
-      end
-
-      describe '#numbered_levels' do
-        it 'numbers levels' do
-          numbering = course.numbered_levels.map(&:level_number)
-          expect(numbering).to eq((1..(levels.size)).to_a)
         end
       end
     end
@@ -109,7 +89,7 @@ RSpec.describe Course, type: :model do
         end
       end
       let!(:lesson_plan_items) do
-        [3.days.ago, 2.days.ago, 1.days.from_now, 3.days.from_now].map do |start_at|
+        [3.days.ago, 2.days.ago, 1.day.from_now, 3.days.from_now].map do |start_at|
           create(:course_lesson_plan_item, course: course, start_at: start_at)
         end
       end
@@ -177,6 +157,75 @@ RSpec.describe Course, type: :model do
 
         it { is_expected.to include(approved_user) }
         it { is_expected.not_to include(unapproved_user) }
+      end
+    end
+
+    describe '.search' do
+      let(:keyword) { 'KeyWord' }
+      let!(:course_with_keyword_in_title) do
+        course = create(:course, title: 'Course' + keyword)
+        # We should be able to find the course even it doesn't have any course_users
+        course.course_users.destroy_all
+        course
+      end
+      let!(:course_with_keyword_in_description) do
+        course = create(:course, description: "Awesome#{keyword.downcase}Math!")
+        # We should not return multiple instances of same course if it has multiple course_users
+        create_list(:course_user, 2, course: course)
+        course
+      end
+      let!(:course_with_keyword_in_user_name) do
+        user = create(:user, name: "I am #{keyword}")
+        course_user = create(:course_user, user: user)
+        course_user.course
+      end
+
+      subject { Course.search(keyword).to_a }
+      it 'finds the course' do
+        subject
+
+        expect(subject.count(course_with_keyword_in_title)).to eq(1)
+        expect(subject.count(course_with_keyword_in_description)).to eq(1)
+        expect(subject.count(course_with_keyword_in_user_name)).to eq(1)
+      end
+    end
+
+    describe '#root_folder?' do
+      let(:course) { build(:course) }
+      subject { course.root_folder? }
+
+      context 'when course is a new record' do
+        it { is_expected.to be_truthy }
+
+        context 'when there is no root folder' do
+          before { course.material_folders.clear }
+          it { is_expected.to be_falsey }
+        end
+      end
+
+      context 'when course is persisted' do
+        before { course.save }
+        it { is_expected.to be_truthy }
+
+        context 'when there is no root folder' do
+          before { course.root_folder.destroy }
+
+          it { is_expected.to be_falsey }
+        end
+      end
+    end
+
+    describe '#default_level?' do
+      let(:course) { build(:course) }
+      subject { course.default_level? }
+
+      context 'when course is a new record' do
+        it { is_expected.to be_truthy }
+      end
+
+      context 'when course is persisted' do
+        before { course.save }
+        it { is_expected.to be_truthy }
       end
     end
   end

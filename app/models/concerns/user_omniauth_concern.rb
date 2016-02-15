@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module UserOmniauthConcern
   extend ActiveSupport::Concern
   include UserOmniauthFacebookConcern
@@ -18,7 +19,8 @@ module UserOmniauthConcern
     # Find the user from omniauth data.
     #
     # @param [OmniAuth::AuthHash] auth The data with omniauth info.
-    # @return [User|nil] The user found or nil.
+    # @return [User] The user found.
+    # @return [nil] If none is found.
     def find_by_omniauth(auth)
       identity = User::Identity.find_by(provider: auth.provider, uid: auth.uid)
       identity.user if identity
@@ -32,6 +34,7 @@ module UserOmniauthConcern
       User.create do |user|
         user.assign_attributes(name: auth.info.name, email: auth.info.email,
                                password: Devise.friendly_token[0, 20])
+        user.skip_confirmation! if user.email
         user.link_with_omniauth(auth)
       end
     end
@@ -48,7 +51,7 @@ module UserOmniauthConcern
   # database.
   #
   # @param [OmniAuth::AuthHash|Hash] auth The data with omniauth info.
-  # @return [Bool] True if success, otherwise false.
+  # @return [Boolean] True if success, otherwise false.
   def link_with_omniauth!(auth)
     link_with_omniauth(auth)
     save

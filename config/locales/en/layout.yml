@@ -11,6 +11,7 @@ en:
       sign_out: 'Sign Out'
       admin_panel: 'Administration Panel'
       instance_admin_panel: 'Instance Administration Panel'
+      stop_masquerading: '(Stop Masquerading)'
   layouts:
     course:
       administration: :'system.admin.admin.index.header'
@@ -25,10 +26,19 @@ en:
     course_users:
       title: 'Manage Users'
     attachment_uploader:
-      uploaded: 'Uploaded Files:'
-      new_file: 'Upload New File'
-      remove: 'Remove'
+      uploaded_files: 'Uploaded Files:'
+      uploaded_file: 'Uploaded File:'
+      new_files: 'Upload New Files'
+    materials_uploader:
+      uploaded_materials: 'Uploaded Materials:'
+      new_materials: 'Upload New Materials'
     mailer:
       greeting: 'Hello, %{user}:'
       complimentary_close: 'Best Regards,'
       sign_off: 'The Coursemology Team'
+    search_form:
+      search_button: :'common.search'
+    course_user_badge:
+      achievements: :'course.achievements.index.header'
+      levels: :'course.levels.index.level'
+      progress: '%{current} / %{next} EXP'

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe ApplicationWidgetsHelper, type: :helper do
@@ -177,6 +178,35 @@ RSpec.describe ApplicationWidgetsHelper, type: :helper do
             :'helpers.buttons.announcement.edit',
             :'helpers.buttons.edit',
             'Edit Announcement')
+        end
+      end
+    end
+
+    describe '#display_progress_bar' do
+      let(:default_class) { 'progress-bar-info' }
+      subject { helper.send(:display_progress_bar, 50) }
+      it 'returns a progress bar' do
+        expect(subject).to have_tag('div.progress-bar', with: { role: 'progressbar' })
+      end
+
+      it 'specifies the correct percentage of the progress bar' do
+        expect(subject).to have_tag('div.progress-bar', style: 'width: 50%')
+      end
+
+      it 'defaults to .progress-bar-info' do
+        expect(subject).to include(default_class)
+      end
+
+      context 'when classes are specified' do
+        it 'is reflected in the progress bar' do
+          expect(helper.send(:display_progress_bar, 50, ['progress-bar-striped'])).
+            to have_tag('div.progress-bar.progress-bar-striped')
+        end
+      end
+
+      context 'when a block is given' do
+        it 'appends the text within the progress bar' do
+          expect(helper.send(:display_progress_bar, 50) { '30%' }).to include('30%')
         end
       end
     end

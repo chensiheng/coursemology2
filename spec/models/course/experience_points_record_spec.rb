@@ -1,9 +1,9 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
-RSpec.describe Course::ExperiencePointsRecord, type: :model do
+RSpec.describe Course::ExperiencePointsRecord do
   it { is_expected.to belong_to(:course_user).inverse_of(:experience_points_records) }
   it { is_expected.to validate_presence_of(:course_user) }
-  it { is_expected.to validate_numericality_of(:points_awarded).only_integer }
 
   let!(:instance) { create(:instance) }
   with_tenant(:instance) do
@@ -12,7 +12,7 @@ RSpec.describe Course::ExperiencePointsRecord, type: :model do
 
     describe '.active' do
       it 'only returns active records' do
-        active = create_list(:course_experience_points_record, 2,  course_user: course_user)
+        active = create_list(:course_experience_points_record, 2, course_user: course_user)
         create_list(:course_experience_points_record, 2, :inactive, course_user: course_user)
         expect(course_user.experience_points_records.active).to contain_exactly(*active)
       end
@@ -33,7 +33,7 @@ RSpec.describe Course::ExperiencePointsRecord, type: :model do
 
       it { is_expected.to be_valid }
       it 'is a manual experience points record' do
-        expect(subject.send(:manual_exp?)).to be_truthy
+        expect(subject.send(:manually_awarded?)).to be_truthy
       end
 
       context 'when the record does not have a reason' do

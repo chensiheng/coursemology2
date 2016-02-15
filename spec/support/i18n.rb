@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 RSpec.configure do |config|
   config.before(:suite) do
     # The Stubbed I18n backend will allow certain translation keys to be returned directly, ignoring
@@ -33,7 +34,7 @@ RSpec.configure do |config|
       # @param [String] key The key to check.
       # @return [Boolean]
       def always_return_actual?(key)
-        key.start_with?('errors.', 'support.')
+        key.start_with?('errors.', 'support.', 'number.')
       end
     end
     I18n.backend = StubbedI18nBackend.new

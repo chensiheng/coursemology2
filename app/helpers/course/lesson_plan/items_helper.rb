@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Course::LessonPlan::ItemsHelper
   def milestone_period_class(item)
     'past' if item.start_at < Time.zone.now
@@ -8,6 +9,6 @@ module Course::LessonPlan::ItemsHelper
   end
 
   def item_body_id(item)
-    "item-#{item.class.name.underscore.dasherize.gsub('/', '_')}-#{item.id}-body"
+    "item-#{item.class.name.underscore.dasherize.tr('/', '_')}-#{item.id}-body"
   end
 end

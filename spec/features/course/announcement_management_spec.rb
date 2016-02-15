@@ -1,167 +1,112 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
-RSpec.describe 'Course: Announcements', type: :feature do
-  subject { page }
-
+RSpec.feature 'Course: Announcements' do
   let!(:instance) { create(:instance) }
 
   with_tenant(:instance) do
-    let!(:user) { create(:administrator) }
-    let!(:course) { create(:course) }
+    let(:course) { create(:course) }
+    let!(:not_started_announcement) { create(:course_announcement, :not_started, course: course) }
+    let!(:valid_announcement) { create(:course_announcement, course: course) }
+    let!(:ended_announcement) { create(:course_announcement, :ended, course: course) }
 
     before do
       login_as(user, scope: :user)
     end
 
-    describe 'announcement creation' do
-      before { visit new_course_announcement_path(course) }
+    context 'As an Course Manager' do
+      let(:user) { create(:course_manager, :approved, course: course).user }
 
-      context 'with invalid information' do
-        before { click_button I18n.t('helpers.submit.announcement.create') }
+      scenario 'I can create new announcements' do
+        visit new_course_announcement_path(course)
+        click_button I18n.t('helpers.submit.announcement.create')
+        expect(page).to have_button(I18n.t('helpers.submit.announcement.create'))
+        expect(page).to have_css('div.has-error')
 
-        it 'stays on the same page' do
-          expect(page).to have_button(I18n.t('helpers.submit.announcement.create'))
-        end
+        announcement = build_stubbed(:course_announcement, course: course)
+        fill_in 'announcement_title',    with: announcement.title
+        fill_in 'announcement_content',  with: announcement.content
+        expect do
+          click_button I18n.t('helpers.submit.announcement.create')
+        end.to change(course.announcements, :count).by(1)
 
-        it 'shows errors' do
-          expect(page).to have_css('div.has-error')
-        end
+        expect(page).to have_selector('div.alert.alert-success',
+                                      text: I18n.t('course.announcements.create.success'))
+        expect(current_path).to eq(course_announcements_path(course))
       end
 
-      context 'with valid information' do
-        let(:announcement) { build(:course_announcement, course: course) }
-        subject { click_button I18n.t('helpers.submit.announcement.create') }
+      scenario 'I can edit announcements' do
+        announcement = create(:course_announcement, course: course)
+        visit edit_course_announcement_path(course, announcement)
 
-        before do
-          fill_in 'announcement_title',    with: announcement.title
-          fill_in 'announcement_content',  with: announcement.content
-        end
+        expect(page).to have_field('announcement_title', with: announcement.title)
+        expect(page).to have_field('announcement_content', with: announcement.content)
+        expect(page).to have_field('announcement[start_at]', with: announcement.start_at)
+        expect(page).to have_field('announcement[end_at]', with: announcement.end_at)
 
-        it 'creates an announcement' do
-          expect { subject }.to change(course.announcements, :count).by(1)
-        end
+        fill_in 'announcement_title', with: ''
+        click_button I18n.t('helpers.submit.announcement.update')
+        expect(page).to have_button('helpers.submit.announcement.update')
+        expect(page).to have_css('div.has-error')
 
-        context 'after creation' do
-          before { subject }
+        new_title = 'New Title'
+        new_content = 'New content'
+        fill_in 'announcement_title',        with: new_title
+        fill_in 'announcement_content',      with: new_content
+        click_button I18n.t('helpers.submit.announcement.update')
 
-          it 'shows the success message' do
-            expect(page).to have_selector('div',
-                                          text: I18n.t('course.announcements.create.success'))
-          end
-
-          it 'redirects the user to the index page' do
-            expect(current_path).to eq(course_announcements_path(course))
-          end
-        end
-      end
-    end
-
-    describe 'announcement editing' do
-      let!(:announcement) { create(:course_announcement, course: course) }
-
-      before { visit edit_course_announcement_path(course, announcement) }
-
-      context 'page rendering' do
-        it { is_expected.to have_field('announcement_title', with: announcement.title) }
-        it { is_expected.to have_field('announcement_content', with: announcement.content) }
-        it do
-          is_expected.to have_field('announcement[start_at]',
-                                    with: announcement.start_at)
-        end
-        it do
-          is_expected.to have_field('announcement[end_at]', with: announcement.end_at)
-          click_button I18n.t('helpers.submit.announcement.update')
-        end
+        expect(current_path).to eq course_announcements_path(course)
+        expect(page).to have_selector('div.alert.alert-success',
+                                      text: I18n.t('course.announcements.update.success'))
+        expect(announcement.reload.title).to eq(new_title)
+        expect(announcement.reload.content).to eq(new_content)
       end
 
-      context 'with invalid information' do
-        before do
-          fill_in 'announcement_title', with: ''
-          click_button I18n.t('helpers.submit.announcement.update')
-        end
-
-        it 'stays on the same page' do
-          expect(page).to have_button('helpers.submit.announcement.update')
-        end
-
-        it 'shows errors' do
-          expect(page).to have_css('div.has-error')
-        end
-      end
-
-      context 'with valid information' do
-        let(:new_title)  { 'New Title' }
-        let(:new_content) { 'New content' }
-
-        before do
-          fill_in 'announcement_title',        with: new_title
-          fill_in 'announcement_content',      with: new_content
-          click_button I18n.t('helpers.submit.announcement.update')
-        end
-
-        it 'redirects the user to index page' do
-          expect(current_path).to eq course_announcements_path(course)
-        end
-
-        it 'shows the success message' do
-          expect(page).to have_selector('div',
-                                        text: I18n.t('course.announcements.update.success'))
-        end
-
-        it 'changes the attributes' do
-          expect(announcement.reload.title).to eq(new_title)
-          expect(announcement.reload.content).to eq(new_content)
-        end
-      end
-    end
-
-    describe 'index' do
-      let!(:announcements) do
-        create_list(:course_announcement, 10, course: course)
-      end
-
-      before do
+      scenario 'I can see all existing announcements' do
         visit course_announcements_path(course)
-      end
+        expect(page).to have_link(nil, href: new_course_announcement_path(course))
 
-      context 'management buttons' do
-        it { is_expected.to have_link(nil, href: new_course_announcement_path(course)) }
-      end
-
-      it 'shows all announcements' do
-        announcements.each do |announcement|
-          expect(page).to have_selector('div', text: announcement.title)
-          expect(page).to have_selector('div', text: announcement.content)
-        end
-      end
-
-      it 'shows all management buttons' do
-        announcements.each do |announcement|
+        [not_started_announcement, valid_announcement, ended_announcement].each do |announcement|
+          expect(page).to have_content_tag_for(announcement)
           expect(page).to have_link(nil, href: edit_course_announcement_path(course, announcement))
           expect(page).to have_link(nil, href: course_announcement_path(course, announcement))
         end
       end
+
+      scenario 'I can delete an existing announcement' do
+        announcement = create(:course_announcement, course: course)
+        visit course_announcements_path(course)
+
+        expect do
+          find_link(nil, href: course_announcement_path(course, announcement)).click
+        end.to change(course.announcements, :count).by(-1)
+        expect(current_path).to eq(course_announcements_path(course))
+        expect(page).to have_selector('div.alert.alert-success',
+                                      text: I18n.t('course.announcements.destroy.success'))
+      end
     end
 
-    describe 'announcement destruction' do
-      let!(:announcement) { create(:course_announcement, course: course) }
-      let(:announcement_path) { course_announcement_path(course, announcement) }
+    context 'As an Course Student' do
+      let(:user) { create(:course_student, :approved, course: course).user }
 
-      before { visit course_announcements_path(course) }
+      scenario 'I can view the Announcement Sidebar item' do
+        visit course_path(course)
 
-      it 'deletes the announcement' do
-        expect do
-          find_link(nil, href: announcement_path).click
-        end.to change(course.announcements, :count).by(-1)
+        expect(page).to have_selector('li', text: 'course.announcements.sidebar_title')
       end
 
-      context 'after announcement deleted' do
-        before { find_link(nil, href: announcement_path).click }
+      scenario 'I can see the started announcements' do
+        visit course_announcements_path(course)
+        expect(page).not_to have_link(nil, href: new_course_announcement_path(course))
 
-        it 'shows the success message' do
-          expect(page).to have_selector('div',
-                                        text: I18n.t('course.announcements.destroy.success'))
+        [valid_announcement, ended_announcement].each do |announcement|
+          expect(page).to have_content_tag_for(announcement)
+          expect(page).
+            not_to have_link(nil, href: edit_course_announcement_path(course, announcement))
+          expect(page).not_to have_link(nil, href: course_announcement_path(course, announcement))
         end
+
+        expect(page).not_to have_content_tag_for(not_started_announcement)
       end
     end
   end

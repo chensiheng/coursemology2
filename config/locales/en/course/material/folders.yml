@@ -18,3 +18,11 @@ en:
           failure: 'Failed to delete folder: %{error}'
         folder_controls:
           new: 'New Subfolder'
+          upload: 'Upload'
+          download: 'Download Entire Folder'
+        new_materials:
+          header: 'Upload Files'
+          submit: 'Upload'
+        upload_materials:
+          success: 'Files were uploaded.'
+          failure: 'Failed to upload files: %{error}'

@@ -1,6 +1,78 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe ApplicationFormattersHelper do
+  describe 'text helpers' do
+    before do
+      subject.include(ERB::Util)
+    end
+
+    describe '#format_block_text' do
+      it 'processes newlines' do
+        expect(helper.format_block_text("hello\n\nthere")).to have_tag('p', text: 'there')
+      end
+    end
+
+    describe '#format_inline_text' do
+      it 'does not add a block element' do
+        expect(helper.format_inline_text('')).to eq('')
+      end
+    end
+
+    describe '#format_html' do
+      it 'removes script tags' do
+        expect(helper.format_html('<script/>')).to eq('')
+      end
+
+      it 'formats code' do
+        html = <<-HTML
+          <pre lang="python"><code>
+          def hello:
+            pass
+          </code></pre>
+        HTML
+        expect(helper.format_html(html)).to have_tag('pre.codehilite')
+      end
+
+      it 'produces html_safe output' do
+        expect(helper.format_html('')).to be_html_safe
+      end
+    end
+
+    describe '#format_code_block' do
+      let(:language) { Coursemology::Polyglot::Language::Python::Python2Point7 }
+      let(:snippet) do
+        <<-PYTHON
+          def hello:
+            pass
+        PYTHON
+      end
+      let(:formatted_block) { helper.format_code_block(snippet, language) }
+
+      it 'produces a pre element with the codehilite class' do
+        expect(formatted_block).to have_tag('pre.codehilite')
+      end
+
+      it 'highlights the keywords' do
+        expect(formatted_block).to have_tag('span.k', text: 'def')
+      end
+    end
+
+    describe '#sanitize' do
+      it 'removes script tags' do
+        expect(helper.sanitize('<script/>')).to eq('')
+      end
+    end
+
+    describe '#simple_format' do
+      it 'escapes HTML' do
+        expect(helper.simple_format('<')).to have_tag('p') do
+          with_text('<')
+        end
+      end
+    end
+  end
+
   describe 'user display helper' do
     describe '#display_user' do
       let(:user) { build(:user) }
@@ -8,6 +80,30 @@ RSpec.describe ApplicationFormattersHelper do
 
       it 'displays the user\'s name' do
         expect(subject).to eq(user.name)
+      end
+    end
+
+    describe '#display_user_image' do
+      let(:user) { build_stubbed(:user) }
+      subject { helper.display_user_image(user) }
+
+      context 'when the user has a profile photo' do
+        it 'has an image tag' do
+          expect(subject).to have_tag('img', with: {
+            :'src^' => '/assets/user_silhouette-'
+          })
+        end
+      end
+
+      context "when the user doesn't have a profile photo" do
+        let(:image) { File.join(Rails.root, '/spec/fixtures/files/picture.jpg') }
+        before do
+          file = File.open(image, 'rb')
+          user.profile_photo = file
+          file.close
+        end
+
+        it { is_expected.to include(user.profile_photo.medium.url) }
       end
     end
 

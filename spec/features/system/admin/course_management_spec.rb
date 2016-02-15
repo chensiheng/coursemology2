@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.feature 'System: Administration: Courses' do
@@ -26,14 +27,23 @@ RSpec.feature 'System: Administration: Courses' do
         end
       end
 
-      let!(:course_to_delete) do
-        create(:course, title: Course.unscoped.ordered_by_title.first.title)
-      end
       scenario 'I can delete a course' do
+        course_to_delete = create(:course, title: Course.unscoped.ordered_by_title.first.title)
         visit admin_courses_path
 
         find_link(nil, href: admin_course_path(course_to_delete)).click
         expect(page).to have_selector('div', text: I18n.t('system.admin.courses.destroy.success'))
+      end
+
+      scenario 'I can search courses' do
+        course_to_search = create(:course)
+
+        visit admin_courses_path
+        fill_in 'search', with: course_to_search.title
+        click_button 'layouts.search_form.search_button'
+
+        expect(page).to have_content_tag_for(course_to_search)
+        expect(all('.course').count).to eq(1)
       end
     end
   end

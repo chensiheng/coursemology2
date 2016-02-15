@@ -1,11 +1,8 @@
+# frozen_string_literal: true
 class Course::LessonPlan::Item < ActiveRecord::Base
   actable
 
   after_initialize :set_default_values, if: :new_record?
-
-  validates :base_exp, numericality: { only_integer: true }
-  validates :time_bonus_exp, numericality: { only_integer: true }
-  validates :extra_bonus_exp, numericality: { only_integer: true }
 
   belongs_to :course, inverse_of: :lesson_plan_items
 

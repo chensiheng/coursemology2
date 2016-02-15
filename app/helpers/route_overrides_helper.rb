@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module RouteOverridesHelper
   class << self
     private
@@ -33,4 +34,6 @@ module RouteOverridesHelper
   end
 
   map_route :course_course_user, to: :course_user
+  map_route_helpers_with 'course_assessment_question_programmings' =>
+                           'course_assessment_question_programming_index'
 end

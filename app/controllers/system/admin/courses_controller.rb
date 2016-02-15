@@ -1,10 +1,11 @@
+# frozen_string_literal: true
 class System::Admin::CoursesController < System::Admin::Controller
   around_action :unscope_resources
   add_breadcrumb :index, :admin_courses_path
 
   def index
-    @courses = Course.ordered_by_title.page(params[:page]).merge(CourseUser.owner).
-               eager_load(:instance, course_users: :user)
+    @courses = Course.ordered_by_title.page(page_param).includes(:instance).
+               search(search_param).with_owners
   end
 
   def destroy
@@ -19,6 +20,10 @@ class System::Admin::CoursesController < System::Admin::Controller
   end
 
   private
+
+  def search_param
+    params.permit(:search)[:search]
+  end
 
   def unscope_resources
     Course.unscoped do

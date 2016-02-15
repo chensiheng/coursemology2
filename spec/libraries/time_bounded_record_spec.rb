@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe 'Extension: Time Bounded Record', type: :model do
@@ -5,7 +6,7 @@ RSpec.describe 'Extension: Time Bounded Record', type: :model do
     self.table_name = 'time_bounded_tests'
   end
 
-  temporary_table(:time_bounded_tests) do |t|
+  temporary_table(:time_bounded_tests) do |t| # rubocop:disable Style/SymbolProc
     t.time_bounded
   end
   with_temporary_table(:time_bounded_tests) do
@@ -13,8 +14,8 @@ RSpec.describe 'Extension: Time Bounded Record', type: :model do
       [
         [nil, nil],
         [nil, 1.day],
-        [-1.day, nil],
-        [-1.day, 1.day]
+        [-1.days, nil],
+        [-1.days, 1.day]
       ].map do |pair|
         options = {}
         options[:start_at] = Time.zone.now + pair[0] unless pair[0].nil?

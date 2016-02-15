@@ -6,7 +6,7 @@ class Course::AnnouncementsController < Course::ComponentController
 
   def index #:nodoc:
     @announcements = @announcements.includes(:creator).sorted_by_sticky.sorted_by_date
-    @announcements = @announcements.page(params[:page])
+    @announcements = @announcements.page(page_param)
     unread = @announcements.unread_by(current_user)
     Course::Announcement.mark_array_as_read(unread, current_user)
   end
@@ -54,11 +54,6 @@ class Course::AnnouncementsController < Course::ComponentController
     params.require(:announcement).permit(:title, :content, :sticky, :start_at, :end_at)
   end
 
-  # @return [Course::AnnouncementsComponent | nil] The announcement component or nil if disabled.
-  def component
-    current_component_host[:course_announcements_component]
-  end
-
   # Ensure that the component is enabled.
   #
   # @raise [Coursemology::ComponentNotFoundError] When the component is disabled.
@@ -73,5 +68,11 @@ class Course::AnnouncementsController < Course::ComponentController
 
   def add_announcement_breadcrumb
     add_breadcrumb @announcement_settings.title || :index, :course_announcements_path
+  end
+
+  # @return [Course::AnnouncementsComponent] The announcement component.
+  # @return [nil] If announcement component is disabled.
+  def component
+    current_component_host[:course_announcements_component]
   end
 end

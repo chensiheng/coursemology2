@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 FactoryGirl.define do
   base_time = Time.zone.now.to_i
   sequence :email do |n|
@@ -7,6 +8,7 @@ FactoryGirl.define do
   factory :user_email, class: User::Email.name do
     primary true
     email
+    confirmed_at { Time.zone.now }
 
     after(:build) do |user_email|
       user_email.user ||= build(:user, emails: [user_email], emails_count: 0)

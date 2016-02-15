@@ -1,9 +1,5 @@
 source 'https://rubygems.org'
 
-source 'https://rails-assets.org' do
-  gem 'rails-assets-jquery-ujs'
-end
-
 # For Windows devs
 gem 'tzinfo-data', platforms: [:mswin, :mswin64]
 
@@ -20,24 +16,31 @@ gem 'pg', '>= 0.18.2'
 gem 'schema_plus'
 gem 'schema_plus_association_inverses', '>= 0.0.3'
 gem 'schema_validations'
+gem 'schema_monkey', '<= 2.1.1' # another fix from pinnymz/migration_comments#9
 # Instance/Course settings
 gem 'settings_on_rails'
 # Table and column comments
 gem 'migration_comments'
 # Manage read/unread status
-gem 'unread', github: 'ledermann/unread'
+gem 'unread'
 # Extension for validating hostnames and domain names
 gem 'validates_hostname'
 # A Ruby state machine library
 gem 'workflow'
 # Add creator_id and updater_id attributes to models
 gem 'activerecord-userstamp', '>= 3.0.2'
+# Allow actions to be deferred until after a record is committed.
+gem 'after_commit_action'
+# Allow declaring the calculated attributes of a record
+gem 'calculated_attributes', '>= 0.1.3'
 # Squeel as an SQL-like DSL
 gem 'squeel'
 # For multiple table inheritance
-gem 'active_record-acts_as'
+gem 'active_record-acts_as', '>= 1.0.8'
 # Organise ActiveRecord model into a tree structure
 gem 'edge'
+# Create pretty URLs and work with human-friendly strings
+gem 'friendly_id'
 
 # Use SCSS for stylesheets
 gem 'sass-rails'
@@ -46,6 +49,7 @@ gem 'uglifier', '>= 1.3.0'
 
 # Use jQuery as the JavaScript library
 gem 'jquery-cdn'
+gem 'jquery-rails'
 gem 'jquery-ui-rails'
 # Our Coursemology will be themed using Bootstrap
 gem 'bootstrap-sass'
@@ -53,6 +57,11 @@ gem 'bootstrap-sass-extras', github: 'doabit/bootstrap-sass-extras'
 gem 'autoprefixer-rails'
 # Use font-awesome for icons
 gem 'font-awesome-rails'
+# HTML Pipeline and dependencies
+gem 'html-pipeline'
+gem 'sanitize'
+gem 'rinku'
+gem 'html-pipeline-rouge_filter'
 # Turbolinks makes following links in your web application faster.
 # Read more: https://github.com/rails/turbolinks
 gem 'turbolinks'
@@ -79,16 +88,16 @@ group :development do
   gem 'wdm', '>= 0.0.3', platforms: [:mswin, :mswin64]
 
   # Helps to prevent database slowdowns
-  gem 'lol_dba'
+  gem 'lol_dba', require: false
 
   # General cleanliness
-  gem 'traceroute'
+  gem 'traceroute', require: false
 end
 
 group :development, :test do
   # bundle exec yardoc generates the API under doc/.
   # Use yard stats --list-undoc to find what needs documenting.
-  gem 'yard',                  group: :doc
+  gem 'yard', group: :doc
 
   # Use RSpec for Behaviour testing
   gem 'rspec-rails'
@@ -99,18 +108,19 @@ group :development, :test do
 
   # Capybara for feature testing
   gem 'capybara'
+  gem 'poltergeist'
 
   # Factory Girl for factories
   gem 'factory_girl_rails'
 
   # Checks that all translations are used and defined
-  gem 'i18n-tasks'
+  gem 'i18n-tasks', require: false
 
   # Helps to prevent database consistency mistakes
-  gem 'consistency_fail'
+  gem 'consistency_fail', require: false
 
   # Prevent N+1 queries.
-  gem 'bullet', github: 'flyerhzm/bullet'
+  gem 'bullet', '>= 4.14.9'
 end
 
 group :ci do
@@ -125,24 +135,27 @@ group :production do
 end
 
 # Multitenancy
-gem 'acts_as_tenant', github: 'lowjoel/acts_as_tenant', branch: 'allow-inverse-of'
+gem 'acts_as_tenant', github: 'ErwinM/acts_as_tenant'
 
 # Internationalization
 gem 'http_accept_language'
 
 # User authentication
 gem 'devise'
+gem 'devise_masquerade'
+gem 'devise-multi_email'
+gem 'simple_token_authentication', github: 'lowjoel/simple_token_authentication', branch: 'optional-params-headers'
 gem 'omniauth'
 gem 'omniauth-facebook'
 
 # Use cancancan for authorization
-gem 'cancancan'
+gem 'cancancan', github: 'lowjoel/cancancan', branch: 'issue-284'
 
 # Some helpers for structuring CSS/JavaScript
 gem 'rails_utils', '>= 3.3.3'
 
 # Themes for instances
-gem 'themes_on_rails', github: 'lowjoel/themes_on_rails'
+gem 'themes_on_rails', '>= 0.3.1'
 
 # Forms made easy for Rails
 gem 'simple_form'
@@ -152,11 +165,21 @@ gem 'cocoon'
 gem 'momentjs-rails', '>= 2.8.1'
 gem 'bootstrap3-datetimepicker-rails'
 gem 'bootstrap-select-rails'
+gem 'ace-rails-ap'
 
 # Using CarrierWave for file uploads
 gem 'carrierwave', github: 'carrierwaveuploader/carrierwave'
+# Generate sequential filenames
+gem 'filename'
 # Required by CarrierWave, for image resizing
 gem 'mini_magick'
+# Library for reading and writing zip files
+gem 'rubyzip', require: 'zip'
+# Manipulating XML files, needed for programming evaluation test report parsing.
+gem 'nokogiri'
+
+# Polyglot support
+gem 'coursemology-polyglot', '>= 0.1.0'
 
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development

@@ -11,7 +11,7 @@
 // about supported directives.
 //
 //= require bootstrap-sprockets
-//= require jquery-ujs
+//= require jquery_ujs
 //= require jquery-ui/sortable
 //= require turbolinks
 //= require nprogress
@@ -21,6 +21,8 @@
 //= require bootstrap-datetimepicker
 //= require bootstrap-select
 //= require simple_form-bootstrap
+//= require ace-rails-ap
+//= require coursemology/polyglot/ace-modes
 //= require layout
 //= require cocoon
 //= require_tree .

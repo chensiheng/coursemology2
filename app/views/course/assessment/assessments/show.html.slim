@@ -1,12 +1,12 @@
-- add_breadcrumb @assessment.title
-= page_header(@assessment.title) do
+- add_breadcrumb format_inline_text(@assessment.title)
+= page_header format_inline_text(@assessment.title) do
   div.btn-group
     = edit_button([current_course, @assessment])
     = delete_button([current_course, @assessment])
 
 = div_for(@assessment) do
   h2 = t('.description')
-  = sanitize(@assessment.description)
+  = format_html(@assessment.description)
 
   table.table.table-bordered.details-table
     tbody
@@ -21,13 +21,13 @@
         td = format_datetime(@assessment.start_at)
       tr.end_at
         th = t('.end_at')
-        td = format_datetime(@assessment.end_at)
+        td = format_datetime(@assessment.end_at) if @assessment.end_at.present?
 
   h2 = t('.finish_to_unlock')
   / TODO: dependencies
 
   h2 = t('.files')
-  / TODO: files
+  = render partial: 'layouts/materials', locals: { folder: @assessment.folder }
 
   div.pull-right
     div.dropdown
@@ -39,6 +39,14 @@
         li role='presentation'
           = link_to(t('.new_question.multiple_response'),
                     new_course_assessment_question_multiple_response_path(current_course, @assessment),
+                    role: 'menuitem')
+        li role='presentation'
+          = link_to(t('.new_question.text_response'),
+                    new_course_assessment_question_text_response_path(current_course, @assessment),
+                    role: 'menuitem')
+        li role='presentation'
+          = link_to(t('.new_question.programming'),
+                    new_course_assessment_question_programming_path(current_course, @assessment),
                     role: 'menuitem')
   h2 = t('.questions')
 

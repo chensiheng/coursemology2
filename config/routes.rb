@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 Rails.application.routes.draw do
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
@@ -61,16 +62,20 @@ Rails.application.routes.draw do
     namespace :condition do
       resources :achievements, except: [:index]
       resources :levels, except: [:index]
+      resources :assessments, except: [:index]
     end
   end
 
   devise_for :users, controllers: {
     registrations: 'user/registrations',
     sessions: 'user/sessions',
-    omniauth_callbacks: 'user/omniauth_callbacks'
+    omniauth_callbacks: 'user/omniauth_callbacks',
+    masquerades: 'user/masquerades'
   }
 
   resources :announcements, only: [:index]
+  resources :jobs, only: [:show]
+
   namespace :user do
     resources :emails, only: [:index, :create, :destroy] do
       post 'set_primary', on: :member
@@ -89,6 +94,8 @@ Rails.application.routes.draw do
       namespace :instance do
         get '/' => 'admin#index', as: :admin
         resources :announcements, except: [:show], concerns: :paginatable
+        resources :users, only: [:index, :update, :destroy], concerns: :paginatable
+        resources :courses, only: [:index, :destroy], concerns: :paginatable
         get 'components' => 'components#edit'
         patch 'components' => 'components#update'
       end
@@ -100,6 +107,7 @@ Rails.application.routes.draw do
       namespace :admin do
         get '/' => 'admin#index'
         patch '/' => 'admin#update'
+        delete '/' => 'admin#destroy'
 
         get 'components' => 'component_settings#edit'
         patch 'components' => 'component_settings#update'
@@ -110,6 +118,12 @@ Rails.application.routes.draw do
 
         get 'assessments' => 'assessment_settings#edit'
         patch 'assessments' => 'assessment_settings#update'
+
+        get 'materials' => 'material_settings#edit'
+        patch 'materials' => 'material_settings#update'
+
+        get 'forums' => 'forum_settings#edit'
+        patch 'forums' => 'forum_settings#update'
         namespace 'assessments' do
           resources :categories, only: [:new, :create, :destroy] do
             resources :tabs, only: [:new, :create, :destroy]
@@ -123,12 +137,28 @@ Rails.application.routes.draw do
           concerns :conditional
         end
       end
+
+      collection do
+        namespace :assessment do
+          resources :programming_evaluations, only: [:index, :show], defaults: { format: 'json' } do
+            post 'allocate' => 'programming_evaluations#allocate', on: :collection
+            get 'package' => 'programming_evaluations#package'
+            put 'result' => 'programming_evaluations#update_result'
+          end
+        end
+      end
+
       scope module: :assessment do
         resources :assessments do
           namespace :question do
             resources :multiple_responses, only: [:new, :create, :edit, :update, :destroy]
+            resources :text_responses, only: [:new, :create, :edit, :update, :destroy]
+            resources :programming, only: [:new, :create, :edit, :update, :destroy]
           end
-          resources :submissions, only: [:create, :edit, :update]
+          resources :submissions, only: [:create, :edit, :update] do
+            post :auto_grade, on: :member
+          end
+          concerns :conditional
         end
       end
       resources :levels, except: [:show, :edit, :update]
@@ -137,6 +167,24 @@ Rails.application.routes.draw do
         get '/' => 'items#index'
         resources :milestones, except: [:index, :show]
         resources :events, except: [:index, :show]
+      end
+
+      scope module: :forum do
+        resources :forums do
+          resources :topics do
+            resources :posts, only: [:create, :edit, :update, :destroy] do
+              get 'reply', on: :member
+            end
+
+            post 'subscribe', on: :member
+            delete 'subscribe', on: :member
+            put 'locked' => 'topics#set_locked', on: :member
+            put 'hidden' => 'topics#set_hidden', on: :member
+          end
+
+          post 'subscribe', on: :member
+          delete 'unsubscribe', on: :member
+        end
       end
 
       resources :users, only: [:update, :destroy] do
@@ -155,6 +203,10 @@ Rails.application.routes.draw do
         resources :folders, except: [:new, :create, :index] do
           get 'new_subfolder', on: :member, path: 'new/subfolder'
           post 'create_subfolder', on: :member, path: 'create/subfolder'
+          get 'new_materials', on: :member, path: 'new/files'
+          put 'upload_materials', on: :member
+          get 'download', on: :member
+          resources :materials, path: 'files'
         end
       end
     end

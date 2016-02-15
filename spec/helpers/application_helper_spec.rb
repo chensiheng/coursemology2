@@ -1,24 +1,25 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe ApplicationHelper, type: :helper do
   describe 'sidebar navigation' do
     it 'defaults to not having a sidebar' do
-      expect(helper.has_sidebar?).to eq(false)
+      expect(helper.sidebar?).to eq(false)
     end
 
     describe '#sidebar!' do
-      it 'sets #has_sidebar?' do
+      it 'sets #sidebar?' do
         helper.sidebar!
-        expect(helper.has_sidebar?).to eq(true)
+        expect(helper.sidebar?).to eq(true)
       end
     end
 
     describe '#sidebar' do
-      it 'sets #has_sidebar?' do
+      it 'sets #sidebar?' do
         helper.sidebar do
           ''
         end
-        expect(helper.has_sidebar?).to eq(true)
+        expect(helper.sidebar?).to eq(true)
       end
 
       it 'accepts a block as the sidebar contents' do
@@ -66,16 +67,23 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
 
     describe '#sidebar_items' do
-      subject { helper.sidebar_items(sidebar_items) }
+      context 'when function is called' do
+        subject { helper.sidebar_items(sidebar_items) }
 
-      it 'displays all the sidebar items' do
-        expect(subject).to have_tag('ul.nav.nav-pills.nav-stacked')
-        sidebar_items.each do |item|
-          expect(subject).to have_tag('li') do
-            with_tag('a', text: /^#{item[:title]}/)
-            with_tag('a', with: { href: item[:path] })
+        it 'displays all the sidebar items' do
+          expect(subject).to have_tag('ul.nav.nav-pills.nav-stacked')
+          sidebar_items.each do |item|
+            expect(subject).to have_tag('li') do
+              with_tag('a', text: /^#{item[:title]}/)
+              with_tag('a', with: { href: item[:path] })
+            end
           end
         end
+      end
+
+      it 'sets #sidebar?' do
+        helper.sidebar_items(sidebar_items)
+        expect(helper.sidebar?).to eq(true)
       end
     end
   end

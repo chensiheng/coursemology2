@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class Course::Registration
   include ActiveModel::Model
   extend ActiveModel::Naming
@@ -21,7 +22,8 @@ class Course::Registration
 
   # @!attribute [rw] course_user
   #   The course user created from the registration object.
-  #   @return [nil|CourseUser]
+  #   @return [nil]
+  #   @return [CourseUser]
   attr_accessor :course_user
 
   # @!attribute [r] errors

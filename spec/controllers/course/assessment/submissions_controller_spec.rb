@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe Course::Assessment::SubmissionsController do
@@ -6,7 +7,7 @@ RSpec.describe Course::Assessment::SubmissionsController do
   with_tenant(:instance) do
     let(:user) { create(:user) }
     let!(:course) { create(:course, creator: user) }
-    let(:assessment) { create(:assessment, course: course) }
+    let(:assessment) { create(:assessment, :with_all_question_types, course: course) }
     let!(:immutable_submission) do
       create(:submission, assessment: assessment, user: user).tap do |stub|
         allow(stub).to receive(:save).and_return(false)

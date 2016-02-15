@@ -1,8 +1,7 @@
 # :nodoc:
 class ApplicationController < ActionController::Base
-  # Prevent CSRF attacks by raising an exception.
-  # For APIs, you may want to use :null_session instead.
-  protect_from_forgery with: :exception
+  # Prevent CSRF attacks by providing a null session when the token is missing from the request.
+  protect_from_forgery
 
   # Custom flash types. We follow Bootstrap's convention.
   add_flash_types :success, :info, :warning, :danger
@@ -16,6 +15,9 @@ class ApplicationController < ActionController::Base
   include ApplicationThemingConcern
   include ApplicationUserConcern
   include ApplicationAnnouncementsConcern
+  include ApplicationPaginationConcern
+
+  rescue_from IllegalStateError, with: :handle_illegal_state_error
 
   protected
 
@@ -30,5 +32,13 @@ class ApplicationController < ActionController::Base
     yield
   ensure
     Bullet.enable = old_bullet_enable
+  end
+
+  private
+
+  # Handles +IllegalStateError+s with a HTTP 422.
+  def handle_illegal_state_error(exception)
+    @exception = exception
+    render file: 'public/422', layout: false, status: 422
   end
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class Course::Group < ActiveRecord::Base
   after_initialize :set_defaults, if: :new_record?
   before_validation :set_defaults, if: :new_record?
@@ -23,7 +24,7 @@ class Course::Group < ActiveRecord::Base
   # Checks if the current group has sufficient information to have a manager, but does not
   # currently exist.
   #
-  # @return [bool]
+  # @return [Boolean]
   def should_create_manager?
     course && creator &&
       course.course_users.exists?(user: creator) &&

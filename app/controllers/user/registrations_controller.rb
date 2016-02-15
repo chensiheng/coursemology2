@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class User::RegistrationsController < Devise::RegistrationsController
   before_action :configure_sign_up_params, only: [:create]
   layout :select_layout
@@ -63,7 +64,8 @@ class User::RegistrationsController < Devise::RegistrationsController
   # This controller uses two layouts, one specially for editing users because it is in the context
   # of the user administration panel.
   #
-  # @return [String|nil]
+  # @return [String]
+  # @return [nil]
   def select_layout
     'user_admin' if ['edit', 'update'].include?(params['action'])
   end

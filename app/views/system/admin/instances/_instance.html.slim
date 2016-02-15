@@ -1,10 +1,14 @@
 = content_tag_for(:tr, instance)
   th
     a
-      = link_to instance.name, admin_instance_path(instance)
+      = link_to format_inline_text(instance.name), admin_instance_path(instance)
 
   td = instance.host
 
   td = instance.user_count
 
   td = instance.course_count
+
+  td
+    = edit_button([:admin, instance]) if can?(:edit, instance)
+    = delete_button([:admin, instance]) if can?(:delete, instance)

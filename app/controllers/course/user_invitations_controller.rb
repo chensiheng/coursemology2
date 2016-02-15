@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class Course::UserInvitationsController < Course::ComponentController
   before_action :authorize_invitation!
   add_breadcrumb :index, :course_users_students_path
@@ -16,11 +17,6 @@ class Course::UserInvitationsController < Course::ComponentController
 
   private
 
-  # Prevents access to this set of pages unless the user is a staff of the course.
-  def authorize_invitation!
-    authorize!(:manage_users, current_course)
-  end
-
   def course_user_invitation_params # :nodoc:
     invitations_attributes = { course_user: [:name], user_email: [:email] }
     @invite_params ||= params.require(:course).
@@ -30,37 +26,44 @@ class Course::UserInvitationsController < Course::ComponentController
 
   # Determines the parameters to be passed to the invitation service object.
   #
-  # @return [Tempfile|Hash|bool]
+  # @return [Tempfile]
+  # @return [Hash]
+  # @return [Boolean]
   def invitation_params
     @invitation_params ||= course_user_invitation_params[:invitations_file].try(:tempfile) ||
                            course_user_invitation_params[:invitations_attributes] ||
                            course_user_invitation_params[:registration_key] == 'checked'.freeze
   end
 
+  # Prevents access to this set of pages unless the user is a staff of the course.
+  def authorize_invitation!
+    authorize!(:manage_users, current_course)
+  end
+
   # Determines if the user uploaded a file.
   #
-  # @return [bool]
+  # @return [Boolean]
   def invite_by_file?
     invitation_params.is_a?(Tempfile)
   end
 
   # Determines if the user keyed in entries manually.
   #
-  # @return [bool]
+  # @return [Boolean]
   def invite_by_entry?
     invitation_params.is_a?(Hash)
   end
 
   # Determines if the user is changing the registration code enabled state.
   #
-  # @return [bool]
+  # @return [Boolean]
   def invite_by_registration_code?
     invitation_params.is_a?(TrueClass) || invitation_params.is_a?(FalseClass)
   end
 
   # Invites the users via the service object.
   #
-  # @return [bool] True if the invitation was successful.
+  # @return [Boolean] True if the invitation was successful.
   def invite
     if invite_by_file? || invite_by_entry?
       invitation_service.invite(invitation_params)

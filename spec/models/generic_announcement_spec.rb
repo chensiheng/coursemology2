@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe GenericAnnouncement, type: :model do
@@ -13,22 +14,22 @@ RSpec.describe GenericAnnouncement, type: :model do
       let!(:now) { Time.zone.now }
       let!(:inactive_announcements) do
         [
-          create_list(:system_announcement, 3, start_at: now + 1.days, end_at: now + 2.days),
-          create_list(:system_announcement, 3, start_at: now - 2.days, end_at: now - 1.days),
-          create_list(:instance_announcement, 3, start_at: now + 1.days, end_at: now + 2.days),
-          create_list(:instance_announcement, 3, start_at: now - 2.days, end_at: now - 1.days)
+          create_list(:system_announcement, 3, start_at: now + 1.day, end_at: now + 2.days),
+          create_list(:system_announcement, 3, start_at: now - 2.days, end_at: now - 1.day),
+          create_list(:instance_announcement, 3, start_at: now + 1.day, end_at: now + 2.days),
+          create_list(:instance_announcement, 3, start_at: now - 2.days, end_at: now - 1.day)
         ].flatten
       end
 
       it 'shows currently active announcements' do
-        all = GenericAnnouncement.currently_active
-        expect(all).to include(*active_system_announcements)
-        expect(all).to include(*active_instance_announcements)
+        active_announcements = active_system_announcements + active_instance_announcements
+        all = GenericAnnouncement.currently_active.where(id: active_announcements.map(&:id))
+        expect(all).to contain_exactly(*active_announcements)
       end
 
       it 'does not show inactive announcements' do
-        all = GenericAnnouncement.currently_active
-        expect(all).to_not include(*inactive_announcements)
+        active = GenericAnnouncement.currently_active.where(id: inactive_announcements.map(&:id))
+        expect(active).to be_empty
       end
     end
 
@@ -60,6 +61,23 @@ RSpec.describe GenericAnnouncement, type: :model do
         announcements = GenericAnnouncement.for_instance(instance)
         expect(announcements).to include(*active_system_announcements)
         expect(announcements).to include(*active_instance_announcements)
+      end
+    end
+
+    describe 'unread state' do
+      let(:creator) { create(:creator) }
+      let!(:user) { create(:user) }
+      let!(:system_announcement) { create(:system_announcement, creator: creator) }
+      let!(:instance_announcement) { create(:instance_announcement, creator: creator) }
+
+      it 'has been read by the creator' do
+        expect(creator.have_read?(instance_announcement)).to eq(true)
+        expect(creator.have_read?(system_announcement)).to eq(true)
+      end
+
+      it 'is unread by other users' do
+        expect(user.have_read?(instance_announcement)).to eq(false)
+        expect(user.have_read?(system_announcement)).to eq(false)
       end
     end
   end

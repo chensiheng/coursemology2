@@ -5,6 +5,7 @@ class Course::Assessment::AssessmentsController < Course::Assessment::Controller
   authorize_resource :assessment, class: Course::Assessment.name
 
   def index
+    @assessments = @assessments.with_submissions_by(current_user)
   end
 
   def show
@@ -55,15 +56,15 @@ class Course::Assessment::AssessmentsController < Course::Assessment::Controller
   def assessment_params
     params.require(:assessment).permit(:title, :description, :base_exp, :time_bonus_exp,
                                        :extra_bonus_exp, :start_at, :end_at, :bonus_end_at,
-                                       :draft)
+                                       :draft, :display_mode, folder_params)
   end
 
   def load_assessment
     case params[:action]
     when 'index'
-      @assessments ||= tab.assessments
+      @assessments ||= tab.assessments.accessible_by(current_ability)
     when 'new', 'create'
-      @assessment ||= tab.assessments.build(course: current_course)
+      @assessment ||= tab.assessments.build
       @assessment.assign_attributes(assessment_params) if params[:assessment]
     end
   end

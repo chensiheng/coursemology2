@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class Course::UsersController < Course::ComponentController
   before_action :load_resource
   authorize_resource :course_user, through: :course, parent: false
@@ -72,7 +73,7 @@ class Course::UsersController < Course::ComponentController
   # +approved+ state.
   #
   # @param [Hash] course_user_params The parameters to set on the given Course User.
-  # @return [bool] True if the course user was updated successfully.
+  # @return [Boolean] True if the course user was updated successfully.
   def update_course_user(course_user_params)
     course_user_requested = @course_user.requested?
     result = @course_user.update(course_user_params)

@@ -1,14 +1,15 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.feature 'Course: Administration: Sidebar' do
   let!(:instance) { create(:instance) }
 
   with_tenant(:instance) do
-    let(:user) { create(:user) }
-    let(:course) { create(:course, creator: user) }
+    let(:course) { create(:course) }
+    before { login_as(user, scope: :user) }
 
-    context 'As a Course Owner' do
-      before { login_as(user, scope: :user) }
+    context 'As a Course Manager' do
+      let(:user) { create(:course_manager, :approved, course: course).user }
 
       let(:first_weight_field) { 'settings_sidebar_sidebar_items_attributes_0_weight' }
       let(:valid_weight) { 1 }

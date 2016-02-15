@@ -1,6 +1,8 @@
+# frozen_string_literal: true
 # Represents a category of assessments. This is typically 'Mission' and 'Training'.
 class Course::Assessment::Category < ActiveRecord::Base
   include Course::ModelComponentHost::Component
+  has_one_folder
 
   belongs_to :course, inverse_of: :assessment_categories
   has_many :tabs, class_name: Course::Assessment::Tab.name,
@@ -10,14 +12,18 @@ class Course::Assessment::Category < ActiveRecord::Base
 
   accepts_nested_attributes_for :tabs
 
-  before_create :build_initial_tab
+  after_initialize :build_initial_tab, if: :new_record?
+  after_initialize :build_initial_folder, if: :new_record?
+  before_validation :assign_folder_attributes
   before_destroy :validate_before_destroy
 
   default_scope { order(:weight) }
 
-  def self.after_course_create(course)
+  def self.after_course_initialize(course)
+    return if course.persisted? || course.assessment_categories.any?
+
     course.assessment_categories.
-      create(title: human_attribute_name('title.default'), weight: 0)
+      build(title: human_attribute_name('title.default'), weight: 0)
   end
 
   # Returns a boolean value indicating if there are other categories
@@ -32,7 +38,15 @@ class Course::Assessment::Category < ActiveRecord::Base
 
   def build_initial_tab
     tabs.build(title: Course::Assessment::Tab.human_attribute_name('title.default'),
-               weight: 0, category: self)
+               weight: 0, category: self) if tabs.empty?
+  end
+
+  def build_initial_folder
+    build_folder(start_at: Time.zone.now)
+  end
+
+  def assign_folder_attributes
+    folder.assign_attributes(name: title, course: course, parent: course.root_folder)
   end
 
   def validate_before_destroy

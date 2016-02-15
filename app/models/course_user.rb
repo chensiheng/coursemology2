@@ -1,15 +1,19 @@
+# frozen_string_literal: true
 class CourseUser < ActiveRecord::Base
   include Workflow
   after_initialize :set_defaults, if: :new_record?
   before_validation :set_defaults, if: :new_record?
 
-  enum role: { student: 0, teaching_assistant: 1, manager: 2, owner: 3 }
+  enum role: { student: 0, teaching_assistant: 1, manager: 2, owner: 3, auto_grader: 4 }
 
   # A set of roles which comprise the staff of a course.
   STAFF_ROLES = Set[:teaching_assistant, :manager, :owner].freeze
 
   # A set of roles which comprise the managers of a course.
   MANAGER_ROLES = Set[:manager, :owner].freeze
+
+  # A set of roles which comprise the auto graders of a course.
+  AUTO_GRADER_ROLES = Set[:auto_grader].freeze
 
   workflow do
     state :requested do
@@ -29,12 +33,27 @@ class CourseUser < ActiveRecord::Base
   belongs_to :user, inverse_of: :course_users
   belongs_to :course, inverse_of: :course_users
   has_many :experience_points_records, class_name: Course::ExperiencePointsRecord.name,
-                                       inverse_of: :course_user, dependent: :destroy do
-    def experience_points
-      sum(:points_awarded)
-    end
-  end
+                                       inverse_of: :course_user, dependent: :destroy
+  has_many :course_user_achievements, class_name: Course::UserAchievement.name,
+                                      inverse_of: :course_user, dependent: :destroy
+  has_many :achievements, through: :course_user_achievements, class_name: Course::Achievement.name
   has_one :invitation, class_name: Course::UserInvitation.name, dependent: :destroy, validate: true
+
+  # @!attribute [r] experience_points
+  #   Sums the total experience points for the course user.
+  #   Default value is 0 when CourseUser does not have Course::ExperiencePointsRecord
+  calculated :experience_points, (lambda do
+    Course::ExperiencePointsRecord.select do
+      coalesce(sum(course_experience_points_records.points_awarded), 0)
+    end.where { course_experience_points_records.course_user_id == course_users.id }
+  end)
+
+  # @!attribute [r] achievement_count
+  #   Returns the total number of achievements obtained by CourseUser in this course
+  calculated :achievement_count, (lambda do
+    Course::UserAchievement.select { count('*') }.
+      where { course_user_achievements.course_user_id == course_users.id }
+  end)
 
   # Gets the staff associated with the course.
   # TODO: Remove the map when Rails 5 is released.
@@ -42,22 +61,14 @@ class CourseUser < ActiveRecord::Base
   scope :instructors, -> { staff }
   scope :students, -> { where(role: roles[:student]) }
 
-  delegate :experience_points, to: :experience_points_records
+  include CourseUser::LevelProgressConcern
 
   # Test whether the current scope includes the current user.
   #
   # @param [User] user The user to check
   # @return [Boolean] True if the user exists in the current context
-  def self.has_user?(user)
+  def self.user?(user)
     with_approved_state.exists?(user: user)
-  end
-
-  # Computes the level number of the CourseUser with respect to
-  # a course's Course::Levels.
-  #
-  # @return [Fixnum] CourseUser level number
-  def level_number
-    course.compute_level_number(experience_points)
   end
 
   # Test whether this course_user is a staff (i.e. teaching_assistant, manager or owner)

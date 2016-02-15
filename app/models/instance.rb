@@ -1,5 +1,6 @@
+# frozen_string_literal: true
 class Instance < ActiveRecord::Base
-  DEFAULT_HOST_NAME = '*'
+  DEFAULT_HOST_NAME = '*'.freeze
 
   has_settings_on :settings
 
@@ -52,22 +53,22 @@ class Instance < ActiveRecord::Base
   #   @note You are scoped by the current tenant, you might not see all.
   has_many :courses, dependent: :destroy
 
-  # @!method self.with_course_count
-  #   Augments all returned records with the number of courses in that instance.
-  scope :with_course_count, (lambda do
-    joins { courses.outer }.
-      select { 'instances.*' }.
-      select { count(courses.id).as(course_count) }.
-      group { instances.id }
+  # @!method self.order_by_id(direction = :asc)
+  #   Orders the instances by ID.
+  scope :order_by_id, ->(direction = :asc) { order(id: direction) }
+
+  # @!attribute [r] course_count
+  #   The number of courses in the instance.
+  calculated :course_count, (lambda do
+    Course.unscoped.where { courses.instance_id == instances.id }.
+      select { count('*') }
   end)
 
-  # @!method self.with_user_count
-  #   Augments all returned records with the number of users in that instance.
-  scope :with_user_count, (lambda do
-    joins { instance_users.outer }.
-      select { 'instances.*' }.
-      select { count(instance_users.id).as(user_count) }.
-      group { instances.id }
+  # @!attribute [r] user_count
+  #   The number of users in the instance.
+  calculated :user_count, (lambda do
+    InstanceUser.unscoped.where { instance_users.instance_id == instances.id }.
+      select { count('*') }
   end)
 
   def self.use_relative_model_naming?
@@ -76,7 +77,7 @@ class Instance < ActiveRecord::Base
 
   # Checks if the current instance is the default instance.
   #
-  # @return [bool]
+  # @return [Boolean]
   def default?
     host == Instance::DEFAULT_HOST_NAME
   end

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe Duplicator, type: :model do
@@ -88,13 +89,13 @@ RSpec.describe Duplicator, type: :model do
       #               ----> s1
       #
       @s1 = SimpleObject.new(1)
-      @c4 = ComplexObject.new(14, [])      # assign children later
+      @c4 = ComplexObject.new(14, []) # assign children later
       @c5 = ComplexObject.new(15, [@c4])
       @c3 = ComplexObject.new(13, [@c5])
       @c2 = ComplexObject.new(12, [@c3, @c4])
       @c1 = ComplexObject.new(11, [@c2])
 
-      @c4.instance_variable_set(:@children, [@s1, @c3])   # create cycle
+      @c4.instance_variable_set(:@children, [@s1, @c3]) # create cycle
     end
 
     def create_second_cyclic_graph
@@ -105,7 +106,7 @@ RSpec.describe Duplicator, type: :model do
       #      |      |--> |
       #      ----------> c23
       #
-      @c22 = ComplexObject.new(22, [])  # assign children later
+      @c22 = ComplexObject.new(22, []) # assign children later
       @c23 = ComplexObject.new(23, [@c22])
       @c21 = ComplexObject.new(21, [@c22, @c23])
 
@@ -440,13 +441,14 @@ RSpec.describe Duplicator, type: :model do
 
         it 'is duplicated by default' do
           duplicator = Duplicator.new
-          duplicator.duplicate(@sar_1).save
 
-          all_records = SimpleActiveRecord.all
+          expect do
+            @dup_sar_1 = duplicator.duplicate(@sar_1)
+            @dup_sar_1.save
+          end.to change { SimpleActiveRecord.count }.by(1)
 
-          expect(SimpleActiveRecord.count).to eq(2)
-          expect(all_records[0].data).to eq(all_records[1].data)
-          expect(all_records[0].id).to_not eq(all_records[1].id)
+          expect(@sar_1.data).to eq(@dup_sar_1.data)
+          expect(@sar_1.id).to_not eq(@dup_sar_1.id)
         end
 
         it 'is not duplicated if excluded' do
@@ -612,14 +614,17 @@ RSpec.describe Duplicator, type: :model do
 
             it 'duplicates cyclic graph' do
               duplicator = Duplicator.new
-              dup_c1 = duplicator.duplicate(@car1)
-              dup_c1.save
 
-              dup_c3 = dup_c1.children[0].children[0]
+              # Check that number of objects increased
+              expect do
+                @dup_c1 = duplicator.duplicate(@car1)
+                @dup_c1.save
+              end.to change { ComplexActiveRecord.count }.by(6)
+
+              # init some variables for easier checking
+              dup_c3 = @dup_c1.children[0].children[0]
               dup_c5 = dup_c3.children[0]
-              dup_c4 = dup_c1.children[0].children[1]
-
-              expect(ComplexActiveRecord.count).to eq(12)
+              dup_c4 = @dup_c1.children[0].children[1]
 
               # check cycle data
               expect(dup_c3.data).to eq(13)

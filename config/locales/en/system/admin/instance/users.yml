@@ -1,0 +1,13 @@
+en:
+  system:
+    admin:
+      instance:
+        users:
+          index:
+            header: 'Users'
+            related_courses: 'Related Courses'
+            search_placeholder: 'Search user name or emails'
+          update:
+            success: '%{user} was updated.'
+          destroy:
+            success: '%{user} was deleted.'

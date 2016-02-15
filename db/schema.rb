@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # encoding: UTF-8
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
@@ -11,15 +12,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150812024950) do
+ActiveRecord::Schema.define(version: 20160126094510) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "uuid-ossp"
 
   create_table "users", force: :cascade do |t|
     t.string   "name",                   limit: 255,              null: false
     t.integer  "role",                   default: 0,  null: false
+    t.text     "profile_photo"
     t.string   "encrypted_password",     limit: 255, default: "", null: false
+    t.string   "authentication_token",   limit: 255, index: {name: "index_users_on_authentication_token", unique: true}
     t.string   "reset_password_token",   limit: 255, index: {name: "index_users_on_reset_password_token", unique: true}
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
@@ -79,6 +83,7 @@ ActiveRecord::Schema.define(version: 20150812024950) do
     t.integer  "course_id",   null: false, index: {name: "fk__course_achievements_course_id"}, foreign_key: {references: "courses", name: "fk_course_achievements_course_id", on_update: :no_action, on_delete: :no_action}
     t.string   "title",       limit: 255, null: false
     t.text     "description"
+    t.text     "badge"
     t.integer  "weight",      null: false
     t.boolean  "draft",       null: false
     t.integer  "creator_id",  null: false, index: {name: "fk__course_achievements_creator_id"}, foreign_key: {references: "users", name: "fk_course_achievements_creator_id", on_update: :no_action, on_delete: :no_action}
@@ -98,25 +103,6 @@ ActiveRecord::Schema.define(version: 20150812024950) do
     t.integer  "updater_id", null: false, index: {name: "fk__course_announcements_updater_id"}, foreign_key: {references: "users", name: "fk_course_announcements_updater_id", on_update: :no_action, on_delete: :no_action}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-  end
-
-  create_table "course_assessment_answer_multiple_responses", force: :cascade do |t|
-  end
-
-  create_table "course_assessment_question_multiple_responses", force: :cascade do |t|
-    t.integer "question_type", default: 0, null: false
-  end
-
-  create_table "course_assessment_question_multiple_response_options", force: :cascade do |t|
-    t.integer "question_id", null: false, index: {name: "fk__course_assessment_multiple_response_option_question"}, foreign_key: {references: "course_assessment_question_multiple_responses", name: "fk_course_assessment_question_multiple_response_options_questio", on_update: :no_action, on_delete: :no_action}
-    t.boolean "correct",     null: false
-    t.text    "option",      null: false
-    t.text    "explanation"
-  end
-
-  create_table "course_assessment_answer_multiple_response_options", force: :cascade do |t|
-    t.integer "answer_id", null: false, index: {name: "fk__course_assessment_multiple_response_option_answer"}, foreign_key: {references: "course_assessment_answer_multiple_responses", name: "fk_course_assessment_answer_multiple_response_options_answer_id", on_update: :no_action, on_delete: :no_action}
-    t.integer "option_id", null: false, index: {name: "fk__course_assessment_multiple_response_option_question_option"}, foreign_key: {references: "course_assessment_question_multiple_response_options", name: "fk_course_assessment_answer_multiple_response_options_option_id", on_update: :no_action, on_delete: :no_action}
   end
 
   create_table "course_assessment_categories", force: :cascade do |t|
@@ -140,20 +126,22 @@ ActiveRecord::Schema.define(version: 20150812024950) do
   end
 
   create_table "course_assessments", force: :cascade do |t|
-    t.integer  "tab_id",     null: false, index: {name: "fk__course_assessments_tab_id"}, foreign_key: {references: "course_assessment_tabs", name: "fk_course_assessments_tab_id", on_update: :no_action, on_delete: :no_action}
-    t.integer  "creator_id", null: false, index: {name: "fk__course_assessments_creator_id"}, foreign_key: {references: "users", name: "fk_course_assessments_creator_id", on_update: :no_action, on_delete: :no_action}
-    t.integer  "updater_id", null: false, index: {name: "fk__course_assessments_updater_id"}, foreign_key: {references: "users", name: "fk_course_assessments_updater_id", on_update: :no_action, on_delete: :no_action}
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.integer  "tab_id",       null: false, index: {name: "fk__course_assessments_tab_id"}, foreign_key: {references: "course_assessment_tabs", name: "fk_course_assessments_tab_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "display_mode", default: 0, null: false
+    t.integer  "creator_id",   null: false, index: {name: "fk__course_assessments_creator_id"}, foreign_key: {references: "users", name: "fk_course_assessments_creator_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "updater_id",   null: false, index: {name: "fk__course_assessments_updater_id"}, foreign_key: {references: "users", name: "fk_course_assessments_updater_id", on_update: :no_action, on_delete: :no_action}
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
   end
 
   create_table "course_assessment_questions", force: :cascade do |t|
     t.integer  "actable_id"
     t.string   "actable_type",  limit: 255, index: {name: "index_course_assessment_questions_actable", with: ["actable_id"], unique: true}
     t.integer  "assessment_id", null: false, index: {name: "fk__course_assessment_questions_assessment_id"}, foreign_key: {references: "course_assessments", name: "fk_course_assessment_questions_assessment_id", on_update: :no_action, on_delete: :no_action}
-    t.string   "title",         limit: 255, null: false
+    t.string   "title",         limit: 255,             null: false
     t.text     "description"
     t.integer  "maximum_grade", null: false
+    t.integer  "weight",        default: 0, null: false
     t.integer  "creator_id",    null: false, index: {name: "fk__course_assessment_questions_creator_id"}, foreign_key: {references: "users", name: "fk_course_assessment_questions_creator_id", on_update: :no_action, on_delete: :no_action}
     t.integer  "updater_id",    null: false, index: {name: "fk__course_assessment_questions_updater_id"}, foreign_key: {references: "users", name: "fk_course_assessment_questions_updater_id", on_update: :no_action, on_delete: :no_action}
     t.datetime "created_at",    null: false
@@ -170,10 +158,131 @@ ActiveRecord::Schema.define(version: 20150812024950) do
   end
 
   create_table "course_assessment_answers", force: :cascade do |t|
-    t.integer "actable_id"
-    t.string  "actable_type",  limit: 255, index: {name: "index_course_assessment_answers_actable", with: ["actable_id"], unique: true}
-    t.integer "submission_id", null: false, index: {name: "fk__course_assessment_answers_submission_id"}, foreign_key: {references: "course_assessment_submissions", name: "fk_course_assessment_answers_submission_id", on_update: :no_action, on_delete: :no_action}
-    t.integer "question_id",   null: false, index: {name: "fk__course_assessment_answers_question_id"}, foreign_key: {references: "course_assessment_questions", name: "fk_course_assessment_answers_question_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "actable_id"
+    t.string   "actable_type",   limit: 255, index: {name: "index_course_assessment_answers_actable", with: ["actable_id"], unique: true}
+    t.integer  "submission_id",  null: false, index: {name: "fk__course_assessment_answers_submission_id"}, foreign_key: {references: "course_assessment_submissions", name: "fk_course_assessment_answers_submission_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "question_id",    null: false, index: {name: "fk__course_assessment_answers_question_id"}, foreign_key: {references: "course_assessment_questions", name: "fk_course_assessment_answers_question_id", on_update: :no_action, on_delete: :no_action}
+    t.string   "workflow_state", limit: 255, null: false
+    t.datetime "submitted_at"
+    t.integer  "grade"
+    t.boolean  "correct",        comment: "Correctness is independent of the grade (depends on the grading schema)"
+    t.integer  "grader_id",      index: {name: "fk__course_assessment_answers_grader_id"}, foreign_key: {references: "users", name: "fk_course_assessment_answers_grader_id", on_update: :no_action, on_delete: :no_action}
+    t.datetime "graded_at"
+  end
+
+  create_table "jobs", id: :uuid, default: nil, force: :cascade do |t|
+    t.integer "status",      default: 0, null: false
+    t.string  "redirect_to", limit: 255
+    t.json    "error"
+  end
+
+  create_table "course_assessment_answer_auto_gradings", force: :cascade do |t|
+    t.integer  "actable_id",   index: {name: "index_course_assessment_answer_auto_gradings_on_actable", with: ["actable_type"], unique: true}
+    t.string   "actable_type", limit: 255
+    t.integer  "answer_id",    null: false, index: {name: "index_course_assessment_answer_auto_gradings_on_answer_id", unique: true}, foreign_key: {references: "course_assessment_answers", name: "fk_course_assessment_answer_auto_gradings_answer_id", on_update: :no_action, on_delete: :no_action}
+    t.uuid     "job_id",       index: {name: "index_course_assessment_answer_auto_gradings_on_job_id", unique: true}, foreign_key: {references: "jobs", name: "fk_course_assessment_answer_auto_gradings_job_id", on_update: :no_action, on_delete: :nullify}
+    t.json     "result"
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
+  end
+
+  create_table "course_assessment_answer_multiple_responses", force: :cascade do |t|
+  end
+
+  create_table "course_assessment_question_multiple_responses", force: :cascade do |t|
+    t.integer "question_type", default: 0, null: false
+  end
+
+  create_table "course_assessment_question_multiple_response_options", force: :cascade do |t|
+    t.integer "question_id", null: false, index: {name: "fk__course_assessment_multiple_response_option_question"}, foreign_key: {references: "course_assessment_question_multiple_responses", name: "fk_course_assessment_question_multiple_response_options_questio", on_update: :no_action, on_delete: :no_action}
+    t.boolean "correct",     null: false
+    t.text    "option",      null: false
+    t.text    "explanation"
+  end
+
+  create_table "course_assessment_answer_multiple_response_options", force: :cascade do |t|
+    t.integer "answer_id", null: false, index: {name: "fk__course_assessment_multiple_response_option_answer"}, foreign_key: {references: "course_assessment_answer_multiple_responses", name: "fk_course_assessment_answer_multiple_response_options_answer_id", on_update: :no_action, on_delete: :no_action}
+    t.integer "option_id", null: false, index: {name: "fk__course_assessment_multiple_response_option_question_option"}, foreign_key: {references: "course_assessment_question_multiple_response_options", name: "fk_course_assessment_answer_multiple_response_options_option_id", on_update: :no_action, on_delete: :no_action}
+  end
+
+  create_table "course_assessment_answer_programming", force: :cascade do |t|
+  end
+
+  create_table "course_assessment_answer_programming_auto_gradings", force: :cascade do |t|
+  end
+
+  create_table "polyglot_languages", force: :cascade do |t|
+    t.string  "type",      limit: 255, null: false, comment: "The class of language, as perceived by the application."
+    t.string  "name",      limit: 255, null: false, index: {name: "index_polyglot_languages_on_name", unique: true, case_sensitive: false}
+    t.integer "parent_id", index: {name: "fk__polyglot_languages_parent_id"}, foreign_key: {references: "polyglot_languages", name: "fk_polyglot_languages_parent_id", on_update: :no_action, on_delete: :no_action}
+  end
+
+  create_table "course_assessment_question_programming", force: :cascade do |t|
+    t.integer "language_id",   null: false, index: {name: "fk__course_assessment_question_programming_language_id"}, foreign_key: {references: "polyglot_languages", name: "fk_course_assessment_question_programming_language_id", on_update: :no_action, on_delete: :no_action}
+    t.integer "memory_limit",  comment: "Memory limit, in MiB"
+    t.integer "time_limit",    comment: "Time limit, in seconds"
+    t.uuid    "import_job_id", comment: "The ID of the importing job", index: {name: "index_course_assessment_question_programming_on_import_job_id", unique: true}, foreign_key: {references: "jobs", name: "fk_course_assessment_question_programming_import_job_id", on_update: :no_action, on_delete: :nullify}
+  end
+
+  create_table "course_assessment_question_programming_test_cases", force: :cascade do |t|
+    t.integer "question_id", null: false, index: {name: "fk__course_assessment_quest_18b37224652fc59d955122a17ba20d07"}, foreign_key: {references: "course_assessment_question_programming", name: "fk_course_assessment_questi_ee00a2daf4389c4c2ddba3041a15c35f", on_update: :no_action, on_delete: :no_action}
+    t.string  "identifier",  limit: 255, null: false, comment: "Test case identifier generated by the testing framework", index: {name: "index_course_assessment_question_programming_test_case_ident", with: ["question_id"], unique: true}
+    t.boolean "public",      null: false
+    t.text    "description", null: false
+    t.text    "hint"
+  end
+
+  create_table "course_assessment_answer_programming_auto_grading_test_results", force: :cascade do |t|
+    t.integer "auto_grading_id", null: false, index: {name: "fk__course_assessment_answe_57b22f114b54911fd4e1519680ebfd49"}, foreign_key: {references: "course_assessment_answer_programming_auto_gradings", name: "fk_course_assessment_answer_e3d785447112439bb306849be8690102", on_update: :no_action, on_delete: :no_action}
+    t.integer "test_case_id",    index: {name: "fk__course_assessment_answe_29a2568d5e2fb3a47c0561815786f9ab"}, foreign_key: {references: "course_assessment_question_programming_test_cases", name: "fk_course_assessment_answer_bbb492885b1e3dca4433b8af8cb95906", on_update: :no_action, on_delete: :no_action}
+    t.boolean "passed",          null: false
+    t.text    "message"
+  end
+
+  create_table "course_assessment_answer_programming_files", force: :cascade do |t|
+    t.integer "answer_id", null: false, index: {name: "fk__course_assessment_answer_programming_files_answer_id"}, foreign_key: {references: "course_assessment_answer_programming", name: "fk_course_assessment_answer_programming_files_answer_id", on_update: :no_action, on_delete: :no_action}
+    t.string  "filename",  limit: 255,              null: false
+    t.text    "content",   default: "", null: false
+  end
+  add_index "course_assessment_answer_programming_files", ["answer_id", "filename"], name: "index_course_assessment_answer_programming_files_filename", unique: true, case_sensitive: false
+
+  create_table "course_assessment_answer_text_responses", force: :cascade do |t|
+    t.text "answer_text"
+  end
+
+  create_table "course_assessment_programming_evaluations", force: :cascade do |t|
+    t.integer  "course_id",    null: false, index: {name: "fk__course_assessment_programming_evaluations_course_id"}, foreign_key: {references: "courses", name: "fk_course_assessment_programming_evaluations_course_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "language_id",  null: false, index: {name: "fk__course_assessment_programming_evaluations_language_id"}, foreign_key: {references: "polyglot_languages", name: "fk_course_assessment_programming_evaluations_language_id", on_update: :no_action, on_delete: :no_action}
+    t.string   "package_path", limit: 255, null: false
+    t.integer  "memory_limit", comment: "Memory limit, in MiB"
+    t.integer  "time_limit",   comment: "Time limit, in seconds"
+    t.string   "status",       limit: 255, null: false
+    t.integer  "evaluator_id", index: {name: "fk__course_assessment_programming_evaluations_evaluator_id"}, foreign_key: {references: "users", name: "fk_course_assessment_programming_evaluations_evaluator_id", on_update: :no_action, on_delete: :no_action}
+    t.datetime "assigned_at"
+    t.text     "stdout"
+    t.text     "stderr"
+    t.text     "test_report"
+    t.integer  "exit_code"
+    t.datetime "created_at",   null: false
+    t.datetime "updated_at",   null: false
+  end
+
+  create_table "course_assessment_question_programming_template_files", force: :cascade do |t|
+    t.integer "question_id", null: false, index: {name: "fk__course_assessment_quest_dbf3aed51f19fcc63a25d296a057dd1f"}, foreign_key: {references: "course_assessment_question_programming", name: "fk_course_assessment_questi_0788633b496294e558f55f2b41bc7c45", on_update: :no_action, on_delete: :no_action}
+    t.string  "filename",    limit: 255, null: false
+    t.text    "content",     null: false
+  end
+  add_index "course_assessment_question_programming_template_files", ["question_id", "filename"], name: "index_course_assessment_question_programming_template_filenames", unique: true, case_sensitive: false
+
+  create_table "course_assessment_question_text_responses", force: :cascade do |t|
+  end
+
+  create_table "course_assessment_question_text_response_solutions", force: :cascade do |t|
+    t.integer "question_id",   null: false, index: {name: "fk__course_assessment_text_response_solution_question"}, foreign_key: {references: "course_assessment_question_text_responses", name: "fk_course_assessment_questi_2fbeabfad04f21c2d05c8b2d9100d1c4", on_update: :no_action, on_delete: :no_action}
+    t.integer "solution_type", default: 0, null: false
+    t.text    "solution",      null: false
+    t.integer "grade",         default: 0, null: false
+    t.text    "explanation"
   end
 
   create_table "course_assessment_tag_groups", force: :cascade do |t|
@@ -204,6 +313,11 @@ ActiveRecord::Schema.define(version: 20150812024950) do
     t.integer "achievement_id", null: false, index: {name: "fk__course_condition_achievements_achievement_id"}, foreign_key: {references: "course_achievements", name: "fk_course_condition_achievements_achievement_id", on_update: :no_action, on_delete: :no_action}
   end
 
+  create_table "course_condition_assessments", force: :cascade do |t|
+    t.integer "assessment_id",            null: false, index: {name: "fk__course_condition_assessments_assessment_id"}, foreign_key: {references: "course_assessments", name: "fk_course_condition_assessments_assessment_id", on_update: :no_action, on_delete: :no_action}
+    t.float   "minimum_grade_percentage"
+  end
+
   create_table "course_condition_levels", force: :cascade do |t|
     t.integer "minimum_level", null: false
   end
@@ -219,6 +333,28 @@ ActiveRecord::Schema.define(version: 20150812024950) do
     t.datetime "created_at",       null: false
     t.datetime "updated_at",       null: false
   end
+
+  create_table "course_discussion_topics", force: :cascade do |t|
+    t.integer "actable_id"
+    t.string  "actable_type", limit: 255, index: {name: "index_course_discussion_topics_on_actable_type_and_actable_id", with: ["actable_id"], unique: true}
+  end
+
+  create_table "course_discussion_posts", force: :cascade do |t|
+    t.integer  "parent_id",  index: {name: "fk__course_discussion_posts_parent_id"}, foreign_key: {references: "course_discussion_posts", name: "fk_course_discussion_posts_parent_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "topic_id",   null: false, index: {name: "fk__course_discussion_posts_topic_id"}, foreign_key: {references: "course_discussion_topics", name: "fk_course_discussion_posts_topic_id", on_update: :no_action, on_delete: :no_action}
+    t.string   "title",      limit: 255, null: false
+    t.text     "text"
+    t.integer  "creator_id", null: false, index: {name: "fk__course_discussion_posts_creator_id"}, foreign_key: {references: "users", name: "fk_course_discussion_posts_creator_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "updater_id", null: false, index: {name: "fk__course_discussion_posts_updater_id"}, foreign_key: {references: "users", name: "fk_course_discussion_posts_updater_id", on_update: :no_action, on_delete: :no_action}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "course_discussion_topic_subscriptions", force: :cascade do |t|
+    t.integer "topic_id", null: false, index: {name: "fk__course_discussion_topic_subscriptions_topic_id"}, foreign_key: {references: "course_discussion_topics", name: "fk_course_discussion_topic_subscriptions_topic_id", on_update: :no_action, on_delete: :no_action}
+    t.integer "user_id",  null: false, index: {name: "fk__course_discussion_topic_subscriptions_user_id"}, foreign_key: {references: "users", name: "fk_course_discussion_topic_subscriptions_user_id", on_update: :no_action, on_delete: :no_action}
+  end
+  add_index "course_discussion_topic_subscriptions", ["topic_id", "user_id"], name: "index_topic_subscriptions_on_topic_id_and_user_id", unique: true
 
   create_table "course_users", force: :cascade do |t|
     t.integer  "course_id",      null: false, index: {name: "fk__course_users_course_id"}, foreign_key: {references: "courses", name: "fk_course_users_course_id", on_update: :no_action, on_delete: :no_action}
@@ -245,6 +381,45 @@ ActiveRecord::Schema.define(version: 20150812024950) do
     t.integer  "updater_id",     null: false, index: {name: "fk__course_experience_points_records_updater_id"}, foreign_key: {references: "users", name: "fk_course_experience_points_records_updater_id", on_update: :no_action, on_delete: :no_action}
     t.datetime "created_at",     null: false
     t.datetime "updated_at",     null: false
+  end
+
+  create_table "course_forums", force: :cascade do |t|
+    t.integer  "course_id",   null: false, index: {name: "fk__course_forums_course_id"}, foreign_key: {references: "courses", name: "fk_course_forums_course_id", on_update: :no_action, on_delete: :no_action}
+    t.string   "name",        limit: 255, null: false
+    t.string   "slug",        limit: 255
+    t.text     "description"
+    t.integer  "creator_id",  null: false, index: {name: "fk__course_forums_creator_id"}, foreign_key: {references: "users", name: "fk_course_forums_creator_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "updater_id",  null: false, index: {name: "fk__course_forums_updater_id"}, foreign_key: {references: "users", name: "fk_course_forums_updater_id", on_update: :no_action, on_delete: :no_action}
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+  end
+  add_index "course_forums", ["course_id", "slug"], name: "index_course_forums_on_course_id_and_slug", unique: true
+
+  create_table "course_forum_subscriptions", force: :cascade do |t|
+    t.integer "forum_id", null: false, index: {name: "fk__course_forum_subscriptions_forum_id"}, foreign_key: {references: "course_forums", name: "fk_course_forum_subscriptions_forum_id", on_update: :no_action, on_delete: :no_action}
+    t.integer "user_id",  null: false, index: {name: "fk__course_forum_subscriptions_user_id"}, foreign_key: {references: "users", name: "fk_course_forum_subscriptions_user_id", on_update: :no_action, on_delete: :no_action}
+  end
+  add_index "course_forum_subscriptions", ["forum_id", "user_id"], name: "index_course_forum_subscriptions_on_forum_id_and_user_id", unique: true
+
+  create_table "course_forum_topics", force: :cascade do |t|
+    t.integer  "forum_id",   null: false, index: {name: "fk__course_forum_topics_forum_id"}, foreign_key: {references: "course_forums", name: "fk_course_forum_topics_forum_id", on_update: :no_action, on_delete: :no_action}
+    t.string   "title",      limit: 255,                 null: false
+    t.string   "slug",       limit: 255
+    t.boolean  "locked",     default: false
+    t.boolean  "hidden",     default: false
+    t.integer  "topic_type", default: 0
+    t.integer  "creator_id", null: false, index: {name: "fk__course_forum_topics_creator_id"}, foreign_key: {references: "users", name: "fk_course_forum_topics_creator_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "updater_id", null: false, index: {name: "fk__course_forum_topics_updater_id"}, foreign_key: {references: "users", name: "fk_course_forum_topics_updater_id", on_update: :no_action, on_delete: :no_action}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+  add_index "course_forum_topics", ["forum_id", "slug"], name: "index_course_forum_topics_on_forum_id_and_slug", unique: true
+
+  create_table "course_forum_topic_views", force: :cascade do |t|
+    t.integer  "topic_id",   null: false, index: {name: "fk__course_forum_topic_views_topic_id"}, foreign_key: {references: "course_forum_topics", name: "fk_course_forum_topic_views_topic_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "user_id",    null: false, index: {name: "fk__course_forum_topic_views_user_id"}, foreign_key: {references: "users", name: "fk_course_forum_topic_views_user_id", on_update: :no_action, on_delete: :no_action}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "course_groups", force: :cascade do |t|
@@ -309,11 +484,12 @@ ActiveRecord::Schema.define(version: 20150812024950) do
     t.datetime "created_at",                  null: false
     t.datetime "updated_at",                  null: false
   end
+  add_index "course_levels", ["course_id", "experience_points_threshold"], name: "index_experience_points_threshold_on_course_id", unique: true
 
   create_table "course_material_folders", force: :cascade do |t|
     t.integer  "parent_id",          index: {name: "fk__course_material_folders_parent_id"}, foreign_key: {references: "course_material_folders", name: "fk_course_material_folders_parent_id", on_update: :no_action, on_delete: :no_action}
     t.integer  "course_id",          null: false, index: {name: "fk__course_material_folders_course_id"}, foreign_key: {references: "courses", name: "fk_course_material_folders_course_id", on_update: :no_action, on_delete: :no_action}
-    t.integer  "owner_id"
+    t.integer  "owner_id",           index: {name: "index_course_material_folders_on_owner_id_and_owner_type", with: ["owner_type"], unique: true}
     t.string   "owner_type",         limit: 255, index: {name: "fk__course_material_folders_owner_id", with: ["owner_id"]}
     t.string   "name",               limit: 255,                 null: false
     t.text     "description"
@@ -336,6 +512,7 @@ ActiveRecord::Schema.define(version: 20150812024950) do
     t.datetime "created_at",  null: false
     t.datetime "updated_at",  null: false
   end
+  add_index "course_materials", ["folder_id", "name"], name: "index_course_materials_on_folder_id_and_name", unique: true, case_sensitive: false
 
   create_table "course_notifications", force: :cascade do |t|
     t.integer  "activity_id",       null: false, index: {name: "index_course_notifications_on_activity_id"}, foreign_key: {references: "activities", name: "fk_course_notifications_activity_id", on_update: :no_action, on_delete: :no_action}
@@ -344,6 +521,15 @@ ActiveRecord::Schema.define(version: 20150812024950) do
     t.datetime "created_at",        null: false
     t.datetime "updated_at",        null: false
   end
+
+  create_table "course_user_achievements", force: :cascade do |t|
+    t.integer  "course_user_id", index: {name: "fk__course_user_achievements_course_user_id"}, foreign_key: {references: "course_users", name: "fk_course_user_achievements_course_user_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "achievement_id", index: {name: "fk__course_user_achievements_achievement_id"}, foreign_key: {references: "course_achievements", name: "fk_course_user_achievements_achievement_id", on_update: :no_action, on_delete: :no_action}
+    t.datetime "obtained_at",    null: false
+    t.datetime "created_at",     null: false
+    t.datetime "updated_at",     null: false
+  end
+  add_index "course_user_achievements", ["course_user_id", "achievement_id"], name: "index_user_achievements_on_course_user_id_and_achievement_id", unique: true
 
   create_table "user_emails", force: :cascade do |t|
     t.boolean  "primary",              default: false, null: false
@@ -390,10 +576,11 @@ ActiveRecord::Schema.define(version: 20150812024950) do
   create_table "read_marks", force: :cascade do |t|
     t.integer  "readable_id"
     t.string   "readable_type", limit: 255, null: false
-    t.integer  "user_id",       null: false, index: {name: "fk__read_marks_user_id"}, foreign_key: {references: "users", name: "fk_read_marks_user_id", on_update: :no_action, on_delete: :no_action}
+    t.integer  "reader_id",     null: false, index: {name: "fk__read_marks_user_id"}, foreign_key: {references: "users", name: "fk_read_marks_user_id", on_update: :no_action, on_delete: :no_action}
     t.datetime "timestamp"
+    t.string   "reader_type",   limit: 255
   end
-  add_index "read_marks", ["user_id", "readable_type", "readable_id"], name: "index_read_marks_on_user_id_and_readable_type_and_readable_id"
+  add_index "read_marks", ["reader_id", "reader_type", "readable_type", "readable_id"], name: "read_marks_reader_readable_index"
 
   create_table "user_identities", force: :cascade do |t|
     t.integer  "user_id",    null: false, index: {name: "fk__user_identities_user_id"}, foreign_key: {references: "users", name: "fk_user_identities_user_id", on_update: :no_action, on_delete: :no_action}

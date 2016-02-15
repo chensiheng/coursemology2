@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.feature 'Course: Assessments: Management' do
@@ -11,6 +12,7 @@ RSpec.feature 'Course: Assessments: Management' do
       let(:user) { course.creator }
       scenario 'I can create a new assessment' do
         assessment = build_stubbed(:assessment)
+        file = File.join(Rails.root, '/spec/fixtures/files/text.txt')
 
         visit course_assessments_path(course)
         find_link(nil, href: new_course_assessment_path(course)).click
@@ -25,6 +27,9 @@ RSpec.feature 'Course: Assessments: Management' do
         fill_in 'assessment_start_at', with: assessment.start_at
         fill_in 'assessment_end_at', with: assessment.end_at
         fill_in 'assessment_bonus_end_at', with: assessment.bonus_end_at
+        within '#assessment_display_mode' do
+          find("option[value='guided']").select_option
+        end
 
         click_button 'submit'
 
@@ -33,9 +38,13 @@ RSpec.feature 'Course: Assessments: Management' do
         expect(page).to have_field('assessment_base_exp', with: assessment.base_exp)
 
         fill_in 'assessment_title', with: assessment.title
+        attach_file :assessment_files_attributes, file
         click_button 'submit'
 
-        expect(page).to have_content_tag_for(course.assessments.last)
+        assessment_created = course.assessments.last
+        expect(page).to have_content_tag_for(assessment_created)
+        expect(assessment_created.folder.materials).to be_present
+        expect(assessment_created).to be_guided
       end
 
       scenario 'I can edit an assessment' do
@@ -64,6 +73,14 @@ RSpec.feature 'Course: Assessments: Management' do
 
     context 'As a Course Student' do
       let(:user) { create(:course_user, :approved, course: course).user }
+
+      scenario 'I can view the Assessment Sidebar item' do
+        visit course_path(course)
+
+        assessment_sidebar = 'activerecord.attributes.course/assessment/category/title.default'
+        expect(page).to have_selector('li', text: assessment_sidebar)
+      end
+
       scenario 'I can see assessments' do
         category = course.assessment_categories.first
         assessment = create(:assessment, course: course, tab: category.tabs.first)

@@ -2,7 +2,7 @@ class Course::CoursesController < Course::Controller
   include Course::ActivityFeedsConcern
 
   def index # :nodoc:
-    @courses = @courses.page(params[:page])
+    @courses = @courses.page(page_param)
   end
 
   def show # :nodoc:
@@ -29,6 +29,6 @@ class Course::CoursesController < Course::Controller
 
   def course_params # :nodoc:
     params.require(:course).
-      permit(:title, :description, :status, :start_at, :end_at)
+      permit(:title, :description, :status, :start_at, :end_at, :logo)
   end
 end

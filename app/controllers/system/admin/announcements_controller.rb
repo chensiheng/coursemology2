@@ -1,9 +1,10 @@
+# frozen_string_literal: true
 class System::Admin::AnnouncementsController < System::Admin::Controller
   load_and_authorize_resource :announcement, class: System::Announcement.name
   add_breadcrumb :index, :admin_announcements_path
 
   def index
-    @announcements = @announcements.includes(:creator).page(params[:page])
+    @announcements = @announcements.includes(:creator).ordered_by_date.page(page_param)
   end
 
   def new

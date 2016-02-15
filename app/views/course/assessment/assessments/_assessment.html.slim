@@ -1,6 +1,7 @@
 = content_tag_for(:tr, assessment, class: time_period_class(assessment) + draft_class(assessment))
   th
-    = link_to(assessment.title, course_assessment_path(current_course, assessment))
+    = link_to(format_inline_text(assessment.title),
+              course_assessment_path(current_course, assessment))
     - unless assessment.currently_active?
       small title=time_period_message(assessment)
         =< fa_icon(:calendar)
@@ -10,7 +11,20 @@
 
   td
   td = format_datetime(assessment.start_at)
-  td = format_datetime(assessment.end_at)
+  td = format_datetime(assessment.end_at) if assessment.end_at.present?
   td
-    = button_to(t('.attempt'), course_assessment_submissions_path(current_course, assessment),
-                class: ['btn-info'])
+    - if current_course_user
+      - attempting_submission = assessment.submissions.find(&:attempting?)
+      - submitted_submission = assessment.submissions.find do |submission|
+        submission != attempting_submission
+      - if attempting_submission
+        = link_to(t('.attempt'), edit_course_assessment_submission_path(current_course,
+            assessment, attempting_submission), class: ['btn', 'btn-info'])
+      - elsif submitted_submission
+        = link_to(t('.view'), edit_course_assessment_submission_path(current_course,
+            assessment, submitted_submission), class: ['btn', 'btn-info'])
+      - elsif can?(:attempt, assessment)
+        = button_to(t('.attempt'), course_assessment_submissions_path(current_course, assessment),
+                    class: ['btn-info'])
+    - else
+      = link_to(t('.attempt'), '#', class: ['btn', 'btn-info', 'disabled'])

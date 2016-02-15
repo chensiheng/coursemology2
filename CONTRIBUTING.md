@@ -12,7 +12,8 @@ parameter and return types when annotated using it.
 Run `yard stats --list-undoc` to find which methods need documenting.
 
 ## Tests
-Run tests using `rake spec`.
+Run tests using `rake spec`. You need [PhantomJS](http://phantomjs.org/) to run the tests. We use
+lvh.me to simulate tenants, thanks [levicook](http://github.com/levicook)!
 
 Try to group tests according to their purpose. Feature tests should be namespaced using colons
 for tidiness (e.g. `Courses: Users`)
@@ -22,12 +23,30 @@ are those that do not depend on any external state to run. This would allow test
 parallel.
 
 When defining constants, by default all constants would go to the global namespace and
-potentially cause your specs to intefere with each other. To overcome this,
+potentially cause your specs to interfere with each other. To overcome this,
 [prefix all constants with `self::`](http://stackoverflow.com/a/6025300).
 
 In Rails, controller specs will always execute the `rescue_from` handlers. In our specs, we
 disable that by default; to execute controllers with the handlers enabled, declare `run_rescue`
 within the example group.
+
+In development mode and when running specs, ActiveJob jobs are run with the `:background_thread`
+queue adapter (see `lib/autoload/active_job/queue_adapters`). This is to ensure consistency with
+production (where we will be using a separate jobs server): running jobs inline might cause
+database conenctions within the job to remain within a transaction.
+
+Therefore, specs have a group helper `with_active_job_queue_adapter`, which takes the queue
+adapter to use for that group of examples. The only adapters which should be used is:
+
+ - `:test` when counting the number of enqueued jobs.
+ - `:background_thread` when running job specs. `spec/support/active_job.rb` automatically sets
+   the default queue adapter to be `:test` when running job specs.
+
+There is no longer a need to explicitly set the `:inline` adapter for delayed delivery of mail.
+When running specs, all deferred mail deliveries are converted to immediate deliveries to keep
+track of the number of pending mail deliveries.
+
+Trackable Jobs can be waited -- use the `TrackableJob#wait` method.
 
 ## Developer Tools
 The project's Gemfile contains a few developer tools to help keep the project tidy:
@@ -46,10 +65,14 @@ Declare model attributes in the following order:
     validation needs to be placed _after_ the association so that the validation is not
     overwritten by the association model's validations.
  6. associations
- 7. scopes
+ 7. calculated fields
+ 8. scopes
 
 This allows models to be inherited. See the section on _Inherited Callback Queues_ from
 [`ActiveRecord::Callbacks`](http://api.rubyonrails.org/classes/ActiveRecord/Callbacks.html#module-ActiveRecord::Callbacks-label-Inheritable+callback+queues).
+
+Take note that workflows do *not* persist their state, `save` needs to be called on the record.
+See `lib/extensions/deferred_workflow_state_persistence`.
 
 ## Views
 The same code style for Ruby code applies to all views (e.g. single quotes unless interpolations
@@ -79,6 +102,10 @@ classes which should be applied to an element. Use the Slim shorthand for classe
 When displaying translations for long stretches of text (e.g. a paragraph), use Rails'
 `simple_format` view helper to present the text. This automatically paragraphs the translations.
 
+When displaying user input, use the formatting helpers in 
+`app/helpers/application_formatters_helper.rb`. This would apply HTML sanitisation, automatic 
+linking to URL-like strings, etc. 
+
 When using Simple Form remember to declare `f.error_notification`.
 
 `simple_form_for`, `simple_fields_for`, and associated methods (`f.input`, etc.) should be called
@@ -87,6 +114,12 @@ without parentheses.
 ## Controllers
 
 Controller actions (`render`, `redirect_to`) should be called without parentheses.
+
+Arrange private controller methods in the following order: 
+ 1. All `params` methods
+ 2. Callbacks - `before_action` and `after_action`  
+ 3. Any other helper methods for the controller
+
 
 ## Breadcrumbs
 Remember to specify page breadcrumbs in **controllers** with the `add_breadcrumb` helper.
@@ -113,8 +146,15 @@ Application components still implement their views in `app/views`, with themes g
 override them in the theme directory.
 
 A sample theme (for [coursemology.org](http://coursemology.org)) can be found in the
-[coursemology2-coursemology.org project]
-(http://github.com/coursemology/coursemology2-coursemology.org-theme)
+[coursemology-theme project](https://github.com/Coursemology/coursemology-theme).
+
+## Sprockets Pipeline
+Because we use Sass' `@import` directive, which does not ensure a file is included exactly once 
+(see sass/sass#139), we have a custom workaround by using an ERB template. This will properly 
+pick up changes made to scss files, but adding new files would require clearing the asset cache.
+
+Run `rake assets:clobber` (in production) and `rm -rf tmp/cache` (in development) to clear the 
+cache.
 
 ## Libraries
 The `lib` directory is not autoloaded, as described in this [blog post](http://hakunin.com/rails3-load-paths#if-you-add-code-in-your-lib-directory). However, the `lib/autoload`

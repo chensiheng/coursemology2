@@ -1,13 +1,25 @@
+# frozen_string_literal: true
 # Helpers for formatting objects/values on the application.
 module ApplicationFormattersHelper
-  # Sanitises and formats the given user-input string. The string is assumed to contain HTML markup.
+  include ApplicationHTMLFormattersHelper
+
+  # Formats the given user-input string. The string is assumed not to contain HTML markup, and
+  # will be processed for simple formatting like newlines using the Rails +simple_format+ helper.
   #
-  # TODO: not implemented
+  # This will treat the given text as a block element.
   #
-  # @param [String] text The text to display
+  # @param [String] text The text to display.
   # @return [String]
-  def format_text(text)
-    text
+  def format_block_text(text)
+    format_html(simple_format(text, {}, sanitize: false))
+  end
+
+  # Formats the given user-input string. The string is assumed not to contain HTML markup.
+  #
+  # @param [String] text The text to display.
+  # @return [String]
+  def format_inline_text(text)
+    format_html(html_escape(text))
   end
 
   # Formats the given User as a user-visible string.
@@ -24,9 +36,8 @@ module ApplicationFormattersHelper
   # @param [User] user The user to display
   # @return [String] A HTML fragment containing the image to display for the user.
   def display_user_image(user)
-    user.name # TODO: Implement displaying the actual user avatar.
     content_tag(:span, class: ['image']) do
-      image_tag('user_silhouette.svg')
+      image_tag(user.profile_photo.medium.url || 'user_silhouette.svg')
     end
   end
 
@@ -65,20 +76,18 @@ module ApplicationFormattersHelper
   def time_period_class(item)
     if !item.started?
       ['not-started']
-    elsif item.currently_active?
-      ['currently-active']
     elsif item.ended?
       ['ended']
-    else
-      []
+    else # Not started, not ended.
+      ['currently-active']
     end
   end
 
   # A helper for retrieving the title for a time-bounded item's status.
   #
   # @param [ActiveRecord::Base] item An ActiveRecord object which has time-bounded fields.
-  # @return [String|nil] A translated string representing the status of the item, or nil if the
-  #   item is valid.
+  # @return [String] A translated string representing the status of the item.
+  # @return [nil] If the item is valid.
   def time_period_message(item)
     if !item.started?
       t('common.not_started')
@@ -102,8 +111,8 @@ module ApplicationFormattersHelper
   # A helper for retrieving the title of a draft item's status.
   #
   # @param [ActiveRecord::Base] item An ActiveRecord object which has a draft field.
-  # @return [String|nil] A translated string representing the status of the item, or nil if the
-  #   item is not a draft.
+  # @return [String] A translated string representing the status of the item.
+  # @return [nil] If the item is not a draft.
   def draft_message(item)
     t('common.draft') if item.draft?
   end

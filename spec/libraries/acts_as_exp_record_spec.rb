@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe 'Extension: Acts as Experience Points Record' do
@@ -10,7 +11,7 @@ RSpec.describe 'Extension: Acts as Experience Points Record' do
   end
 
   subject { self.class::DummyClass.new }
-  it { is_expected.not_to be_manual_exp }
+  it { is_expected.not_to be_manually_awarded }
   it { is_expected.to respond_to(:points_awarded) }
   it { is_expected.to respond_to(:course_user) }
   it { is_expected.to respond_to(:acting_as) }

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # Represents an email address belonging to a user.
 class User::Email < ActiveRecord::Base
   after_destroy :set_new_user_primary_email, if: :primary?
@@ -5,8 +6,6 @@ class User::Email < ActiveRecord::Base
   schema_validations except: :primary
   validates :primary, inclusion: [true, false]
   validates :primary, uniqueness: { scope: [:user_id], conditions: -> { where(primary: true) } }
-  validates :email, uniqueness: { case_sensitive: false }
-  validates :email, format: Devise.email_regexp
 
   belongs_to :user, inverse_of: :emails
 

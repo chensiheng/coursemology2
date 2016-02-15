@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 FactoryGirl.define do
   factory :course_user do
     user
@@ -33,6 +34,10 @@ FactoryGirl.define do
     end
     trait :phantom do
       phantom true
+    end
+
+    trait :auto_grader do
+      role :auto_grader
     end
   end
 end

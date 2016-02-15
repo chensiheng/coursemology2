@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
@@ -11,6 +12,10 @@ Rails.application.configure do
   # just for the purpose of running a single test. If you are using a tool that
   # preloads Rails for running tests, you may have to set it to true.
   config.eager_load = false
+
+  # Override the testing public path
+  paths['public'] = File.join(Rails.root, 'tmp', 'spec', 'public')
+  FileUtils.mkdir_p(Rails.public_path) unless Dir.exist?(Rails.public_path)
 
   # Configure static file server for tests with Cache-Control for performance.
   config.serve_static_files   = true
@@ -36,6 +41,9 @@ Rails.application.configure do
 
   # We will assume that we are running on localhost
   config.action_mailer.default_url_options = { host: 'localhost' }
+
+  # Use the threaded background job adapter for replicating the production environment.
+  config.active_job.queue_adapter = :background_thread
 
   # Randomize the order test cases are executed.
   config.active_support.test_order = :random

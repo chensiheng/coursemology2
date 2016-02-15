@@ -1,9 +1,10 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.describe Course::UserRegistrationService, type: :service do
   let(:instance) { create(:instance) }
   with_tenant(:instance) do
-    let(:course) { create(:open_course) }
+    let(:course) { create(:course, :opened) }
     let(:user) { create(:user) }
     let(:registration) { Course::Registration.new(course: course, user: user, code: '') }
     subject { Course::UserRegistrationService.new }

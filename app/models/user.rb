@@ -1,20 +1,43 @@
+# frozen_string_literal: true
 # Represents a user in the application. Users are shared across all instances.
 class User < ActiveRecord::Base
-  include UserAuthenticationConcern
+  SYSTEM_USER_ID = 0
+
+  include UserSearchConcern
   model_stamper
   acts_as_reader
+  mount_uploader :profile_photo, ImageUploader
 
-  enum role: { normal: 0, administrator: 1 }
+  enum role: { normal: 0, administrator: 1, auto_grader: 2 }
 
-  after_validation :propagate_user_email_errors
+  class << self
+    # Finds the System user.
+    #
+    # This account cannot be logged into (because it has no email and a null password), and the
+    # User Authentication Concern explcitly rejects any user with the system user ID.
+    #
+    # @return [User]
+    def system
+      @system ||= find(User::SYSTEM_USER_ID)
+      fail 'No system user. Did you run rake db:seed?' unless @system
+      @system
+    end
+  end
 
   has_many :emails, -> { order('primary' => :desc) }, class_name: User::Email.name,
                                                       inverse_of: :user, dependent: :destroy
+  # This order need to be preserved, so that :emails association can be detected by
+  # devise-multi_email correctly.
+  include UserAuthenticationConcern
+
   has_many :instance_users, dependent: :destroy
   has_many :instances, through: :instance_users
   has_many :identities, dependent: :destroy, class_name: User::Identity.name
   has_many :activities, inverse_of: :actor, dependent: :destroy, foreign_key: 'actor_id'.freeze
-  has_many :notifications, dependent: :destroy, class_name: UserNotification.name
+  has_many :notifications, dependent: :destroy, class_name: UserNotification.name,
+                           inverse_of: :user do
+    include UserNotificationsConcern
+  end
   has_many :course_users, dependent: :destroy
   has_many :courses, through: :course_users
   has_many :course_group_users, dependent: :destroy, class_name: Course::GroupUser.name
@@ -23,31 +46,13 @@ class User < ActiveRecord::Base
   accepts_nested_attributes_for :emails
 
   scope :ordered_by_name, -> { order(:name) }
+  scope :human_users, -> { where { id != User::SYSTEM_USER_ID } }
 
-  # Gets the email address of the user.
+  # Gets whether the current user is the system user.
   #
-  # @return [String, nil] The email address of the user.
-  def email
-    result_record = default_email_record
-    default_email_record.email if result_record
-  end
-
-  # Sets the default email address of the user.
-  #
-  # @param [String, nil] email The email address of the user to set. Nil unsets the record.
-  def email=(email)
-    record = default_email_record
-    if email
-      record ||= emails.build
-      record.email = email
-      record.primary = true
-    elsif email.nil? && record
-      record.mark_for_destruction
-    end
-  end
-
-  def email_changed?
-    !persisted? || (emails.loaded? && emails.each.any?(&:changed))
+  # @return [Boolean]
+  def system?
+    id == User::SYSTEM_USER_ID
   end
 
   # Unset current primary email. This method would immediately set the attributes in the database.
@@ -72,17 +77,6 @@ class User < ActiveRecord::Base
   end
 
   private
-
-  # Propagates the error from the +user_emails+ association to the main object
-  #
-  # @return [void]
-  def propagate_user_email_errors
-    return if (email_errors = errors.delete(:'emails.email')).nil?
-
-    email_errors.each do |error|
-      errors.add(:email, error)
-    end
-  end
 
   # Gets the default email address record.
   #

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rails_helper'
 
 RSpec.feature 'Course: Levels' do
@@ -6,7 +7,6 @@ RSpec.feature 'Course: Levels' do
   let!(:instance) { create(:instance) }
 
   with_tenant(:instance) do
-    let!(:user) { create(:administrator) }
     let!(:course) { create(:course) }
     let!(:levels) do
       (1..3).map do |i|
@@ -14,9 +14,17 @@ RSpec.feature 'Course: Levels' do
       end
     end
 
+    before do
+      login_as(user, scope: :user)
+    end
+
     context 'As a Course Administrator' do
-      before do
-        login_as(user, scope: :user)
+      let(:user) { create(:course_manager, :approved, course: course).user }
+
+      scenario 'I can view the Level Sidebar item' do
+        visit course_path(course)
+
+        expect(page).to have_selector('li', text: 'course.levels.sidebar_title')
       end
 
       scenario 'I can view course levels' do
@@ -30,19 +38,26 @@ RSpec.feature 'Course: Levels' do
       scenario 'I can create a course level' do
         visit course_levels_path(course)
         find_link(nil, href: new_course_level_path(course)).click
-        fill_in 'level_experience_points_threshold', with: 100
+        fill_in 'level_experience_points_threshold', with: 400
 
-        expect do
-          click_button I18n.t('helpers.submit.level.create')
-        end.to change(course.levels, :count).by(1)
+        expect { click_button I18n.t('helpers.submit.level.create') }.
+          to change { course.levels.count }.by(1)
       end
 
       scenario 'I can delete a course level' do
         visit course_levels_path(course)
+        expect { find_link(nil, href: course_level_path(course, levels[0])).click }.
+          to change { course.levels.count }.by(-1)
+      end
+    end
 
-        expect do
-          find_link(nil, href: course_level_path(course, levels[0])).click
-        end.to change(course.levels, :count).by(-1)
+    context 'As a Course Student' do
+      let(:user) { create(:course_student, :approved, course: course).user }
+
+      scenario 'I cannot view the Level Sidebar item' do
+        visit course_path(course)
+
+        expect(page).not_to have_selector('li', text: 'course.levels.sidebar_title')
       end
     end
   end

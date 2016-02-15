@@ -1,9 +1,10 @@
+# frozen_string_literal: true
 # Helpers for displaying sidebars in pages.
 module ApplicationSidebarHelper
   # Checks if the current page has a sidebar.
   #
-  # @return [boolean] True if there is a sidebar for the current page.
-  def has_sidebar?
+  # @return [Boolean] True if there is a sidebar for the current page.
+  def sidebar?
     content_for?(:layout_sidebar)
   end
 
@@ -20,7 +21,7 @@ module ApplicationSidebarHelper
   #
   # @param [Array<String>] classes An array of classes to apply to the sidebar container.
   # @return [String] The buffer containing the markup for the sidebar.
-  def sidebar(classes: ['col-xs-7', 'col-sm-3', 'col-md-2'])
+  def sidebar(classes: ['col-lg-2', 'col-md-3', 'col-sm-4'])
     sidebar!
 
     render layout: 'layouts/sidebar', locals: { sidebar_classes: classes } do
@@ -34,6 +35,8 @@ module ApplicationSidebarHelper
   # @param [Array<String>] classes An array of classes to apply to the sidebar items container.
   # @return [String] The HTML string which will display the sidebar items.
   def sidebar_items(items, classes: ['nav', 'nav-pills', 'nav-stacked'])
+    sidebar!
+
     links = items.map { |item| link_to_sidebar_item(item) }
     content_tag(:ul, class: classes) do
       links.map { |link| concat(content_tag(:li, link)) }

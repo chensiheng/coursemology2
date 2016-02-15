@@ -1,8 +1,12 @@
+# frozen_string_literal: true
 # Represents a generic announcement, which may be either a system-level or instance-level one.
 #
 # This is the abstract single-table inheritance table used for both announcement types.
 class GenericAnnouncement < ActiveRecord::Base
   after_initialize :set_defaults, if: :new_record?
+  acts_as_readable on: :updated_at
+  after_create :mark_as_read_by_creator
+  after_update :mark_as_read_by_updater
 
   belongs_to :instance, inverse_of: :announcements
 
@@ -23,11 +27,6 @@ class GenericAnnouncement < ActiveRecord::Base
 
   default_scope { system_announcements_first.order(start_at: :desc) }
 
-  def unread?(_)
-    # TODO: Implement
-    false
-  end
-
   def sticky?
     false
   end
@@ -38,5 +37,15 @@ class GenericAnnouncement < ActiveRecord::Base
   def set_defaults
     self.start_at ||= Time.zone.now
     self.end_at ||= 7.days.from_now
+  end
+
+  # Mark announcement as read for the creator
+  def mark_as_read_by_creator
+    mark_as_read! for: creator
+  end
+
+  # Mark announcement as read for the updater
+  def mark_as_read_by_updater
+    mark_as_read! for: updater
   end
 end

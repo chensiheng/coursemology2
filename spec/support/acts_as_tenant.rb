@@ -1,5 +1,15 @@
+# frozen_string_literal: true
 # Test group helpers for setting the tenant for tests.
 module ActsAsTenant::TestGroupHelpers
+  def self.build_host(instance)
+    port = Capybara.current_session.try(:server).try(:port)
+    if port
+      "http://#{instance.host}:#{port}"
+    else
+      "http://#{instance.host}"
+    end
+  end
+
   module ModelHelpers
     # Sets the current tenant when running this group of tests.
     #
@@ -49,7 +59,7 @@ module ActsAsTenant::TestGroupHelpers
           @saved_host = Capybara.app_host
           # Capybara's app_host is for remote testing, it's not recommend to change it for
           # multiple times. However, currently we cannot find a better way to do this
-          Capybara.app_host = 'http://' + send(tenant).host
+          Capybara.app_host = ActsAsTenant::TestGroupHelpers.build_host(send(tenant))
         end
         after(:each) { Capybara.app_host = @saved_host }
 
@@ -59,25 +69,23 @@ module ActsAsTenant::TestGroupHelpers
   end
 end
 
-module ActsAsTenant::TestExampleHelpers
-  module FeatureHelpers
-    [:visit, :click_button, :click_link].each do |method|
-      define_method(method) do |*args|
-        # Unset the active tenant, let the request flow through the Rack stack and allow our own
-        # code to deduce the tenant from the host name.
-        ActsAsTenant.with_tenant(nil) do
-          super(*args)
-        end
+module ActsAsTenant::CapybaraHelpers
+  module BrowserHelpers
+    # Unset the active tenant, let the request flow through the Rack stack and allow our own
+    # code to deduce the tenant from the host name.
+    def process(*)
+      ActsAsTenant.with_tenant(nil) do
+        super
       end
     end
   end
 end
+Capybara::RackTest::Browser.prepend(ActsAsTenant::CapybaraHelpers::BrowserHelpers)
 
 RSpec.configure do |config|
   config.extend ActsAsTenant::TestGroupHelpers::ModelHelpers
   config.extend ActsAsTenant::TestGroupHelpers::ControllerHelpers, type: :controller
   config.extend ActsAsTenant::TestGroupHelpers::FeatureHelpers, type: :feature
-  config.include ActsAsTenant::TestExampleHelpers::FeatureHelpers, type: :feature
 
-  config.backtrace_exclusion_patterns << %r{/spec/support/acts_as_tenant\.rb}
+  config.backtrace_exclusion_patterns << /\/spec\/support\/acts_as_tenant\.rb/
 end

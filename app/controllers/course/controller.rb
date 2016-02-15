@@ -1,5 +1,6 @@
 class Course::Controller < ApplicationController
   load_and_authorize_resource :course
+  helper name
 
   before_action :add_course_breadcrumb
 
@@ -21,8 +22,9 @@ class Course::Controller < ApplicationController
   helper_method :current_course
 
   # Gets the current course user.
-  # @return [CourseUser|nil] The course user that belongs to the signed in user and the loaded
-  #   course. nil if there is no user session, or no course is loaded.
+  # @return [CourseUser] The course user that belongs to the signed in user and the loaded
+  #   course.
+  # @return [nil] If there is no user session, or no course is loaded.
   def current_course_user
     @current_course_user ||= @course.course_users.find_by(user: current_user)
   end
